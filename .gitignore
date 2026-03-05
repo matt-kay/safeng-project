@@ -87,3 +87,4 @@ client/android/
 
 # Misc
 client/app-example/
+.env
