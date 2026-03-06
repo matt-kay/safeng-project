@@ -1,7 +1,7 @@
-# BriskVTU App Setup Specification
+# SafeMe App Setup Specification
 
 ## Overview
-BriskVTU is a virtual top-up application designed to help Nigerians in the diaspora and locally purchase airtime, data, TV subscriptions, and electricity.
+SafeMe is a virtual top-up application designed to help Nigerians in the diaspora and locally purchase airtime, data, TV subscriptions, and electricity.
 The mobile app will be built Expo React Natively, targeting iOS, Android, and Web platforms.
 
 ## Brand Guidelines
@@ -21,7 +21,7 @@ The mobile app will be built Expo React Natively, targeting iOS, Android, and We
 
 ## Core Setup Steps
 1. **Initialize Project**:
-   Create the base Expo React Native project specifying the organization bundle identifier `com.solutioncrafts.BriskVTU`.
+   Create the base Expo React Native project specifying the organization bundle identifier `com.scitylana.safeme`.
 2. **Add Dependencies**:
    Configure the platform's package manager with required foundational libraries (Networking, State Management, UI architecture).
 3. **Folder Structure**:

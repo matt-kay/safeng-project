@@ -1,7 +1,7 @@
 # Bottom Navigation Specification
 
 ## Overview
-This specification defines the main navigation structure for the BriskVTU mobile applications (iOS, Android, and Web). The app uses a bottom navigation bar to provide quick access to the core features.
+This specification defines the main navigation structure for the SafeMe mobile applications (iOS, Android, and Web). The app uses a bottom navigation bar to provide quick access to the core features.
 
 ## Tabs
 The bottom navigation bar consists of four primary tabs:

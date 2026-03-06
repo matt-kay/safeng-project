@@ -32,7 +32,7 @@ function CustomSplash() {
       <StatusBar style="dark" />
       <View style={styles.splashContent}>
         <Text style={styles.splashIcon}>⚡</Text>
-        <Text style={styles.splashTitle}>BriskVTU</Text>
+        <Text style={styles.splashTitle}>SafeMe</Text>
         <Text style={styles.splashSubtitle}>Fast, Secure & Reliable Top-ups</Text>
       </View>
       <Text style={styles.versionText}>v1.0.0</Text>

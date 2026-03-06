@@ -23,10 +23,10 @@ export default () => ({
     projectId: process.env.PUBSUB_PROJECT_ID || 'brisk-vtu',
     emulatorHost: process.env.PUBSUB_EMULATOR_HOST,
     notificationsTopic:
-      process.env.PUBSUB_NOTIFICATIONS_TOPIC || 'briskvtu-notifications',
+      process.env.PUBSUB_NOTIFICATIONS_TOPIC || 'safeme-notifications',
     notificationsSubscription:
       process.env.PUBSUB_NOTIFICATIONS_SUBSCRIPTION ||
-      'briskvtu-notifications-push-sub',
+      'safeme-notifications-push-sub',
     pushEndpoint:
       process.env.PUBSUB_PUSH_ENDPOINT ||
       'http://localhost:3000/pubsub/notifications',

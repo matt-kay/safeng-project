@@ -58,8 +58,8 @@ export default function CouponDetailsScreen() {
         try {
             await Clipboard.setStringAsync(coupon.code);
             await Share.share({
-                message: `Use my BriskVTU coupon code "${coupon.code}" to get ${CouponService.formatNaira(coupon.amountPerUse)} added to your wallet! 🎁`,
-                title: `BriskVTU Coupon – ${coupon.name}`,
+                message: `Use my SafeMe coupon code "${coupon.code}" to get ${CouponService.formatNaira(coupon.amountPerUse)} added to your wallet! 🎁`,
+                title: `SafeMe Coupon – ${coupon.name}`,
             });
         } catch (error) {
             // User cancelled share — no-op

@@ -79,7 +79,7 @@ export default function VTUReceipt({
 
                         <View style={styles.footer}>
                             <Text style={styles.footerText}>
-                                Thank you for using BriskVTU. If you have any issues, please contact support.
+                                Thank you for using SafeMe. If you have any issues, please contact support.
                             </Text>
                         </View>
                     </View>

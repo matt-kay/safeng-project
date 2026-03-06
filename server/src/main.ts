@@ -17,9 +17,9 @@ async function bootstrap() {
 
   if (process.env.NODE_ENV !== 'production') {
     const config = new DocumentBuilder()
-      .setTitle('BriskVTU Backend API')
+      .setTitle('SafeMe Backend API')
       .setDescription(
-        'API documentation for the BriskVTU backend services, including wallet, VTU, coupons, and beneficiary management.',
+        'API documentation for the SafeMe backend services, including safety reports, user management, and intelligence platform features.',
       )
       .setVersion('1.0')
       .addBearerAuth()

@@ -1,7 +1,7 @@
 {
-  "name": "briskvtu-server",
+  "name": "safeme-server",
   "version": "1.0.0",
-  "description": "Unified backend server for BriskVTU containing all services",
+  "description": "Unified backend server for SafeMe containing all services",
   "author": "",
   "private": true,
   "license": "UNLICENSED",

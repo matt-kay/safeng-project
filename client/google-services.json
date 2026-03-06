@@ -9,7 +9,7 @@
       "client_info": {
         "mobilesdk_app_id": "1:700171545581:android:029c8b69b66c8f5f92d5e4",
         "android_client_info": {
-          "package_name": "com.solutioncrafts.BriskVTU"
+          "package_name": "com.scitylana.safeme"
         }
       },
       "oauth_client": [
@@ -34,7 +34,7 @@
               "client_id": "700171545581-dk9bpole9duumgk9bii3mr3c310o39a9.apps.googleusercontent.com",
               "client_type": 2,
               "ios_info": {
-                "bundle_id": "com.solutioncrafts.BriskVTU"
+                "bundle_id": "com.scitylana.safeme"
               }
             }
           ]

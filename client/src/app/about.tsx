@@ -23,57 +23,57 @@ export default function AboutScreen() {
             </View>
             <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
                 <View style={styles.brandingSection}>
-                    <Ionicons name="flash" size={60} color={colors.primary} style={styles.brandIcon} />
-                    <Text style={[styles.appName, { color: colors.text }]}>BriskVTU</Text>
-                    <Text style={[styles.tagline, { color: colors.subtext }]}>Maximize your Virtual Top-ups</Text>
+                    <Ionicons name="shield-checkmark" size={60} color={colors.primary} style={styles.brandIcon} />
+                    <Text style={[styles.appName, { color: colors.text }]}>SafeMe</Text>
+                    <Text style={[styles.tagline, { color: colors.subtext }]}>Crowdsourced + Predictive Safety Intelligence</Text>
                     <Text style={[styles.version, { color: colors.subtext }]}>{versionString}</Text>
                 </View>
 
                 <View style={styles.section}>
-                    <Text style={[styles.sectionTitle, { color: colors.text }]}>We Are Outspoken About Our Success and Position.</Text>
+                    <Text style={[styles.sectionTitle, { color: colors.text }]}>Your Ultimate Safety Companion.</Text>
                     <Text style={[styles.sectionText, { color: colors.subtext }]}>
-                        Seamless Transactions, Exceptional Benefits, and Unmatched Convenience—All in One App!{"\n\n"}
-                        Our app is designed to make your life easier with seamless transactions, unbeatable convenience, and rewards at every step. Whether it’s airtime, data, utility bills, our app has got you covered with top-notch features and support.
+                        SafeMe is a revolutionary crowdsourced + predictive safety intelligence platform designed to keep you and your community informed and secure.{"\n\n"}
+                        Our platform leverages real-time data from users like you combined with advanced predictive analytics to provide actionable safety insights. Whether it's identifying high-risk areas, reporting incidents, or receiving early warnings, SafeMe empowers you with the knowledge to stay safe.
                     </Text>
                 </View>
 
                 <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
                 <View style={styles.section}>
-                    <Text style={[styles.sectionTitle, { color: colors.text }]}>Our Core Services</Text>
+                    <Text style={[styles.sectionTitle, { color: colors.text }]}>Core Features</Text>
                     <ServiceRow
-                        title="Airtime & Data Top-Up"
-                        description="Stay connected with seamless airtime and data purchases. Whether it’s for MTN, Glo, Airtel, or 9mobile, BriskVTU ensures quick, secure, and affordable top-ups at competitive rates."
+                        title="Crowdsourced Reporting"
+                        description="Report and view safety incidents in real-time. Your contributions help build a safer environment for everyone by providing up-to-the-minute information on local safety conditions."
                         textColor={colors.text}
                         subTextColor={colors.subtext}
                     />
                     <ServiceRow
-                        title="Electricity Token Purchase"
-                        description="Buying electricity tokens has never been easier. Whether your family or business uses a prepaid or postpaid meter, BriskVTU makes it simple to keep the lights on."
+                        title="Predictive Analytics"
+                        description="Stay one step ahead with our predictive models that analyze historical and real-time data to forecast potential safety risks in your area."
                         textColor={colors.text}
                         subTextColor={colors.subtext}
                     />
                     <ServiceRow
-                        title="Cashback and Rewards"
-                        description="Enjoy cashback and rewards on every top-up and bill payment, adding value to your transactions."
+                        title="Safety Intelligence"
+                        description="Access detailed safety insights and heatmaps to understand the security landscape of any location, helping you make informed decisions about your travel and activities."
                         textColor={colors.text}
                         subTextColor={colors.subtext}
                     />
                     <ServiceRow
-                        title="Cable TV Subscriptions"
-                        description="Renew your DSTV, GOTV, or Startimes subscriptions instantly. With BriskVTU, you don’t have to worry about missing your favorite TV shows, sports, or news updates."
+                        title="Community Alerts"
+                        description="Receive instant notifications about safety concerns near you. SafeMe ensures you're never caught off guard by providing timely alerts based on verified reports."
                         textColor={colors.text}
                         subTextColor={colors.subtext}
                     />
                     <ServiceRow
-                        title="Expense Management"
-                        description="Keep an eye on your spending with detailed transaction history and analytics."
+                        title="Emergency Assistance"
+                        description="Quickly access emergency services and share your live location with trusted contacts when you need help the most."
                         textColor={colors.text}
                         subTextColor={colors.subtext}
                     />
                     <ServiceRow
-                        title="24/7 Support"
-                        description="Get assistance anytime, anywhere with our dedicated support team available around the clock to help you resolve any issues quickly and efficiently."
+                        title="24/7 Monitoring"
+                        description="Our platform works around the clock to process safety data, ensuring that you always have access to the latest security intelligence."
                         textColor={colors.text}
                         subTextColor={colors.subtext}
                     />
@@ -82,22 +82,22 @@ export default function AboutScreen() {
                 <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
                 <View style={styles.section}>
-                    <Text style={[styles.sectionTitle, { color: colors.text }]}>Special Features</Text>
+                    <Text style={[styles.sectionTitle, { color: colors.text }]}>Community Empowerment</Text>
                     <ServiceRow
-                        title="Coupons"
-                        description="Create and distribute utility coupons to multiple people at once. Perfect for birthdays, anniversaries, or simply helping out family and friends."
+                        title="Safety Scores"
+                        description="Check the safety score of neighborhoods and venues before you visit. We aggregate user feedback and incident data to give you a clear picture of local safety."
                         textColor={colors.text}
                         subTextColor={colors.subtext}
                     />
                     <ServiceRow
-                        title="Gifting"
-                        description="BriskVTU Gifting Feature allows users to send airtime, data, or services via gift codes. It ensures flexibility, control, and secure gifting within the app."
+                        title="Trusted Circles"
+                        description="Create private groups with family and friends to share safety status and location updates in a secure, controlled environment."
                         textColor={colors.text}
                         subTextColor={colors.subtext}
                     />
                     <ServiceRow
-                        title="Referral Program"
-                        description="BriskVTU rewards users for spreading the word! You get 5% cashback on their transactions for the first month, and they receive 5% cashback as a welcome bonus!"
+                        title="Impact Rewards"
+                        description="SafeMe rewards active contributors who help keep the community safe. Earn recognition and benefits for your commitment to collective safety."
                         textColor={colors.text}
                         subTextColor={colors.subtext}
                     />

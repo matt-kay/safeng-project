@@ -1,7 +1,7 @@
 # Login and Profile Setup Specification (Expo React Native)
 
 ## Overview
-This specification details the authentication flow utilizing phone number sign-in via Firebase Auth (using `expo-firebase-auth` or `react-Expo React Native-firebase` with Expo Config Plugins), and the subsequent profile setup for new users in the BriskVTU Expo application. This flow targets iOS, Android, and Web.
+This specification details the authentication flow utilizing phone number sign-in via Firebase Auth (using `expo-firebase-auth` or `react-Expo React Native-firebase` with Expo Config Plugins), and the subsequent profile setup for new users in the SafeMe Expo application. This flow targets iOS, Android, and Web.
 
 ## Setup Prerequisites
 Unified Firebase Project setup is required. Expo Config Plugins should handle Expo React Native configuration for iOS, Android, and Web. 
@@ -40,7 +40,7 @@ Unified Firebase Project setup is required. Expo Config Plugins should handle Ex
     - Verify the entered SMS code using the Firebase Auth `PhoneAuthProvider.credential`.
     - Display a loading state.
   - **Post-Verification Logic (Crucial Step):**
-    - Assuming successful Firebase authentication, query the BriskVTU backend (via API Gateway/Client SDK) to check if the user profile exists.
+    - Assuming successful Firebase authentication, query the SafeMe backend (via API Gateway/Client SDK) to check if the user profile exists.
   - **Navigation:**
     - **If User Exists:** Authenticate the session and navigate to the **Main Home Application Interface**.
     - **If User Does NOT Exist:** Navigate to the **Setup Profile Screen**.

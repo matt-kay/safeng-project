@@ -1,7 +1,7 @@
 # Splash & Onboarding Screens Specification
 
 ## Overview
-This document outlines the requirements and logic for the Splash and Onboarding screens in the BriskVTU client application.
+This document outlines the requirements and logic for the Splash and Onboarding screens in the SafeMe client application.
 
 ## Logic Flow
 Upon app launch, the initial route must determine which screen to show based on the user's local state:

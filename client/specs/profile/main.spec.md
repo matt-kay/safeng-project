@@ -1,7 +1,7 @@
 # Menu Screen (formerly Profile Screen) Specification
 
 ## Overview
-This specification details the structure and functionality of the Menu Screen (accessed via the **Menu** tab in bottom navigation) for the BriskVTU client application. It centralizes account management, app settings, and support.
+This specification details the structure and functionality of the Menu Screen (accessed via the **Menu** tab in bottom navigation) for the SafeMe client application. It centralizes account management, app settings, and support.
 
 ## UI Structure
 

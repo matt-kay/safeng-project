@@ -1,7 +1,7 @@
 # Client SDK Specification
 
 ## Overview
-The Client SDK serves as the communication layer between the BriskVTU client application and the backend API Gateway. It is responsible for managing authentication state, securely interacting with backend services (`auth-service`), and handling server-initiated token revocation.
+The Client SDK serves as the communication layer between the SafeMe client application and the backend API Gateway. It is responsible for managing authentication state, securely interacting with backend services (`auth-service`), and handling server-initiated token revocation.
 
 ## Technologies
 - **HTTP Client**: Platform-Expo React Native or preferred networking library

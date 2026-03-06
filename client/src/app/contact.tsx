@@ -54,8 +54,8 @@ export default function ContactScreen() {
                     <ContactRow
                         icon="mail"
                         title="Email"
-                        detail="hello@briskvtu.com"
-                        onPress={() => openLink('mailto:hello@briskvtu.com')}
+                        detail="hello@safeme.com"
+                        onPress={() => openLink('mailto:hello@safeme.com')}
                         colors={colors}
                     />
                     <ContactRow

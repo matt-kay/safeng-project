@@ -1,5 +1,5 @@
-const tintColorLight = '#FF9500';
-const tintColorDark = '#FF9500';
+const tintColorLight = '#014342';
+const tintColorDark = '#74E7B2';
 
 export default {
   light: {
@@ -17,8 +17,8 @@ export default {
     warning: '#FFCC00',
     icon: '#1C1C1E',
     chevron: '#C7C7CC',
-    primary: '#FF9500',
-    secondary: '#5856D6',
+    primary: '#014342', // main brand color
+    secondary: '#74E7B2', // accent brand color
   },
   dark: {
     text: '#FFFFFF',
@@ -35,7 +35,7 @@ export default {
     warning: '#FFD60A',
     icon: '#FFFFFF',
     chevron: '#48484A',
-    primary: '#FF9500',
-    secondary: '#5E5CE6',
+    primary: '#014342', // main brand color
+    secondary: '#74E7B2', // accent brand color
   },
 };
