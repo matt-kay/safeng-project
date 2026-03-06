@@ -5,6 +5,7 @@ export default ({ config }) => {
             ...config.extra,
             apiUrl: process.env.API_URL || 'http://localhost:3000/api/v1',
             firebaseAuthEmulatorHost: process.env.FIREBASE_AUTH_EMULATOR_HOST,
+            firebaseStorageEmulatorHost: process.env.FIREBASE_STORAGE_EMULATOR_HOST,
             firebaseConfig: {
                 apiKey: process.env.FIREBASE_API_KEY,
                 authDomain: process.env.FIREBASE_AUTH_DOMAIN,

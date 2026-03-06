@@ -1,14 +1,12 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as admin from 'firebase-admin';
 
 @Injectable()
-export class FirebaseService implements OnModuleInit {
+export class FirebaseService {
   private app: admin.app.App;
 
-  constructor(private configService: ConfigService) { }
-
-  onModuleInit() {
+  constructor(private configService: ConfigService) {
     const isDev = this.configService.get<string>('NODE_ENV') === 'development';
 
     if (isDev) {
@@ -17,6 +15,9 @@ export class FirebaseService implements OnModuleInit {
       }
       if (!process.env.FIRESTORE_EMULATOR_HOST) {
         process.env.FIRESTORE_EMULATOR_HOST = '127.0.0.1:8080';
+      }
+      if (!process.env.FIREBASE_STORAGE_EMULATOR_HOST) {
+        process.env.FIREBASE_STORAGE_EMULATOR_HOST = '127.0.0.1:9199';
       }
     }
 
@@ -39,6 +40,10 @@ export class FirebaseService implements OnModuleInit {
 
   getFirestore(): admin.firestore.Firestore {
     return this.app.firestore();
+  }
+
+  getStorage(): admin.storage.Storage {
+    return this.app.storage();
   }
 
   async updateUserClaims(uid: string, claims: object): Promise<void> {

@@ -88,3 +88,4 @@ client/android/
 # Misc
 client/app-example/
 .env
+client/test_assets

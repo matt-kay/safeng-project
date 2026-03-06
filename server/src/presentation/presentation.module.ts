@@ -7,6 +7,8 @@ import { AuthController } from './controllers/auth.controller';
 import { PaystackWebhookController } from './controllers/paystack-webhook.controller';
 import { PaystackController } from './controllers/paystack.controller';
 import { SOSController } from './controllers/sos.controller';
+import { ReportController } from './controllers/report.controller';
+import { MediaController } from './controllers/media.controller';
 
 @Module({
   imports: [
@@ -20,6 +22,8 @@ import { SOSController } from './controllers/sos.controller';
     PaystackWebhookController,
     PaystackController,
     SOSController,
+    ReportController,
+    MediaController,
   ],
 })
 export class PresentationModule { }

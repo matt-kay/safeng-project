@@ -50,6 +50,13 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="report-crime"
+        options={{
+          title: 'Report',
+          tabBarIcon: ({ color, focused }) => <TabBarIcon icon={focused ? "megaphone" : "megaphone-outline"} color={color} label="Report" focused={focused} />,
+        }}
+      />
+      <Tabs.Screen
         name="sos-setup"
         options={{
           title: 'Setup Contacts',
