@@ -29,6 +29,25 @@ export interface CreateReportDto {
     otherTitle?: string;
 }
 
+export interface ReportListItem {
+    id: string;
+    userId: string;
+    type: ReportType;
+    location: ReportLocation;
+    description: string;
+    media: string[];
+    otherTitle?: string;
+    status: string;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface ListReportsResponse {
+    reports: ReportListItem[];
+    total: number;
+    hasMore: boolean;
+}
+
 export class ReportService {
     static async uploadMedia(uri: string, type: 'image' | 'video'): Promise<string> {
         const formData = new FormData();
@@ -61,5 +80,25 @@ export class ReportService {
     static async createReport(reportData: CreateReportDto): Promise<any> {
         const { data } = await apiClient.post('/reports', reportData);
         return data;
+    }
+
+    static async listReports(page: number = 1, limit: number = 10): Promise<ListReportsResponse> {
+        const { data } = await apiClient.get<ListReportsResponse>('/reports', {
+            params: { page, limit },
+        });
+        return data;
+    }
+
+    static async getReport(id: string): Promise<ReportListItem> {
+        const { data } = await apiClient.get<ReportListItem>(`/reports/${id}`);
+        return data;
+    }
+
+    static async updateReport(id: string, reportData: Partial<CreateReportDto>): Promise<void> {
+        await apiClient.patch(`/reports/${id}`, reportData);
+    }
+
+    static async deleteReport(id: string): Promise<void> {
+        await apiClient.delete(`/reports/${id}`);
     }
 }

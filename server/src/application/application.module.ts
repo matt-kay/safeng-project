@@ -3,6 +3,10 @@ import { CqrsModule } from '@nestjs/cqrs';
 import { GetUserProfileHandler } from './queries/get-user-profile.query';
 import { GetAdminUserStatsHandler } from './queries/get-admin-user-stats.query';
 import { GetAdminUsersHandler } from './queries/get-admin-users.query';
+import { GetReportsHandler } from './queries/get-reports.query';
+import { GetReportByIdHandler } from './queries/get-report-by-id.query';
+import { UpdateReportHandler } from './commands/update-report.command';
+import { DeleteReportHandler } from './commands/delete-report.command';
 import { CreateUserProfileHandler } from './commands/create-user-profile.command';
 import { CreateReportHandler } from './commands/create-report.command';
 import { UpdateUserProfileHandler } from './commands/update-user-profile.command';
@@ -14,6 +18,10 @@ const Handlers = [
   GetUserProfileHandler,
   GetAdminUserStatsHandler,
   GetAdminUsersHandler,
+  GetReportsHandler,
+  GetReportByIdHandler,
+  UpdateReportHandler,
+  DeleteReportHandler,
   CreateUserProfileHandler,
   CreateReportHandler,
   UpdateUserProfileHandler,

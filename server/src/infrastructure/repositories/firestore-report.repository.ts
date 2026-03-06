@@ -26,13 +26,30 @@ export class FirestoreReportRepository {
     }
 
     async getByUserId(userId: string): Promise<Report[]> {
-        const snapshot = await this.collection.where('userId', '==', userId).get();
+        const snapshot = await this.collection.where('userId', '==', userId).orderBy('createdAt', 'desc').get();
         return snapshot.docs.map(doc => this.fromFirestore(doc.id, doc.data()));
     }
 
-    async update(id: string, updates: Partial<Report>): Promise<void> {
-        const data = { ...updates, updatedAt: new Date() };
-        await this.collection.doc(id).update(data);
+    async getByUserIdPaginated(userId: string, page: number, limit: number): Promise<{ reports: Report[], total: number, hasMore: boolean }> {
+        const reports = await this.getByUserId(userId);
+        const total = reports.length;
+        const startIndex = (page - 1) * limit;
+        const pagedReports = reports.slice(startIndex, startIndex + limit);
+
+        return {
+            reports: pagedReports,
+            total,
+            hasMore: startIndex + limit < total,
+        };
+    }
+
+    async update(report: Report): Promise<void> {
+        const data = this.toFirestore(report);
+        await this.collection.doc(report.id).set(data, { merge: true });
+    }
+
+    async delete(id: string): Promise<void> {
+        await this.collection.doc(id).delete();
     }
 
     private toFirestore(report: Report): any {

@@ -14,19 +14,18 @@ import {
     Platform,
     Modal,
     Dimensions,
+    FlatList,
+    RefreshControl,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import * as ImagePicker from 'expo-image-picker';
-import Constants from 'expo-constants';
 import { useSettings } from '@/context/SettingsContext';
-import { ReportService, ReportType, ReportLocation } from '@/services/sdk/report-service';
+import { ReportService, ReportType, ReportListItem } from '@/services/sdk/report-service';
 import AlertModal from '@/components/AlertModal';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
-
-// Media uploads are now handled via the server
 
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
 const MAX_VIDEO_SIZE = 50 * 1024 * 1024; // 50MB
@@ -51,7 +50,7 @@ const REPORT_TYPES = [
 export default function ReportCrimeScreen() {
     const { colors, triggerHaptic, resolvedTheme } = useSettings();
     const router = useRouter();
-    const isDark = resolvedTheme === 'dark';
+    const params = useLocalSearchParams<{ editId?: string }>();
 
     const [type, setType] = useState<ReportType | null>(null);
     const [otherTitle, setOtherTitle] = useState('');
@@ -73,9 +72,140 @@ export default function ReportCrimeScreen() {
         type: 'info'
     });
 
+    // Reports list state
+    const [reports, setReports] = useState<ReportListItem[]>([]);
+    const [loadingReports, setLoadingReports] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
+    const [loadingMore, setLoadingMore] = useState(false);
+    const [hasMore, setHasMore] = useState(true);
+    const [page, setPage] = useState(1);
+    const [showFormModal, setShowFormModal] = useState(false);
+    const [editId, setEditId] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (params.editId) {
+            handlePrepareEdit(params.editId);
+        }
+    }, [params.editId]);
+
+    const handlePrepareEdit = async (id: string) => {
+        try {
+            setLoading(true);
+            const reportData = await ReportService.getReport(id);
+            setEditId(id);
+            setType(reportData.type);
+            setOtherTitle(reportData.otherTitle || '');
+            setDescription(reportData.description);
+            setStreet(reportData.location.street);
+            setLga(reportData.location.lga);
+            setState(reportData.location.state);
+            setLandmark(reportData.location.landmark || '');
+            setMedia(reportData.media.map(url => ({ uri: url, type: 'image' })));
+            setCoords({ latitude: reportData.location.latitude, longitude: reportData.location.longitude });
+            setShowFormModal(true);
+        } catch (error) {
+            console.error('Error preparing edit:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
         fetchLocation();
+        fetchReports(1, false);
     }, []);
+
+    const fetchReports = async (pageNum: number, isRefresh = false) => {
+        try {
+            if (isRefresh) setRefreshing(true);
+            else if (pageNum === 1) setLoadingReports(true);
+            else setLoadingMore(true);
+
+            const response = await ReportService.listReports(pageNum, 10);
+
+            if (isRefresh || pageNum === 1) {
+                setReports(response.reports);
+            } else {
+                setReports(prev => [...prev, ...response.reports]);
+            }
+
+            setHasMore(response.hasMore);
+            setPage(pageNum);
+        } catch (error) {
+            console.error('Error fetching reports:', error);
+        } finally {
+            setLoadingReports(false);
+            setRefreshing(false);
+            setLoadingMore(false);
+        }
+    };
+
+    const handleRefresh = () => {
+        fetchReports(1, true);
+    };
+
+    const handleLoadMore = () => {
+        if (!loadingMore && hasMore && !loadingReports) {
+            fetchReports(page + 1);
+        }
+    };
+
+    const getStatusColor = (status: string) => {
+        switch (status?.toLowerCase()) {
+            case 'pending': return '#F59E0B';
+            case 'approved': return '#10B981';
+            case 'rejected': return '#EF4444';
+            case 'resolved': return '#3B82F6';
+            default: return colors.subtext;
+        }
+    };
+
+    const renderReportItem = ({ item }: { item: ReportListItem }) => (
+        <TouchableOpacity
+            style={[styles.reportCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+            onPress={() => {
+                triggerHaptic();
+                router.push({
+                    pathname: '/report-details',
+                    params: { id: item.id }
+                });
+            }}
+        >
+            <View style={styles.reportHeader}>
+                <View style={styles.reportTypeContainer}>
+                    <Ionicons
+                        name={REPORT_TYPES.find(t => t.value === item.type)?.icon as any || "help-circle-outline"}
+                        size={20}
+                        color={colors.primary}
+                    />
+                    <Text style={[styles.reportType, { color: colors.text }]}>
+                        {item.type === ReportType.OTHER ? item.otherTitle : item.type}
+                    </Text>
+                </View>
+                <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) + '15' }]}>
+                    <Text style={[styles.statusText, { color: getStatusColor(item.status) }]}>
+                        {item.status}
+                    </Text>
+                </View>
+            </View>
+
+            <Text style={[styles.reportDescription, { color: colors.subtext }]} numberOfLines={2}>
+                {item.description}
+            </Text>
+
+            <View style={styles.reportFooter}>
+                <View style={styles.reportLocation}>
+                    <Ionicons name="location-outline" size={14} color={colors.subtext} />
+                    <Text style={[styles.reportLocationText, { color: colors.subtext }]} numberOfLines={1}>
+                        {item.location.street}, {item.location.lga}
+                    </Text>
+                </View>
+                <Text style={[styles.reportDate, { color: colors.subtext }]}>
+                    {new Date(item.createdAt).toLocaleDateString()}
+                </Text>
+            </View>
+        </TouchableOpacity>
+    );
 
     const fetchLocation = async () => {
         setFetchingLocation(true);
@@ -85,7 +215,7 @@ export default function ReportCrimeScreen() {
                 setAlert({
                     visible: true,
                     title: 'Permission Denied',
-                    message: 'Location permission is required to report a crime. Please enable it in settings.',
+                    message: 'Location permission is required to report a crime.',
                     type: 'error'
                 });
                 return;
@@ -98,38 +228,13 @@ export default function ReportCrimeScreen() {
             });
         } catch (error) {
             console.error('Error fetching location:', error);
-            setAlert({
-                visible: true,
-                title: 'Location Error',
-                message: 'Failed to fetch your GPS coordinates. Please ensure location is enabled.',
-                type: 'error'
-            });
         } finally {
             setFetchingLocation(false);
         }
     };
 
     const pickMedia = async () => {
-        if (media.length >= 5) {
-            setAlert({
-                visible: true,
-                title: 'Limit Reached',
-                message: 'You can only upload up to 5 media files.',
-                type: 'error'
-            });
-            return;
-        }
-
-        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (status !== 'granted') {
-            setAlert({
-                visible: true,
-                title: 'Permission Denied',
-                message: 'Media library permission is required to upload assets.',
-                type: 'error'
-            });
-            return;
-        }
+        if (media.length >= 5) return;
 
         const result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: ImagePicker.MediaTypeOptions.All,
@@ -139,33 +244,10 @@ export default function ReportCrimeScreen() {
 
         if (!result.canceled && result.assets && result.assets.length > 0) {
             const asset = result.assets[0];
-            const fileSize = asset.fileSize || 0;
-            const isVideo = asset.type === 'video';
-
-            // Size validation
-            if (!isVideo && fileSize > MAX_IMAGE_SIZE) {
-                setAlert({
-                    visible: true,
-                    title: 'File Too Large',
-                    message: 'Images must be smaller than 10MB.',
-                    type: 'error'
-                });
-                return;
-            }
-            if (isVideo && fileSize > MAX_VIDEO_SIZE) {
-                setAlert({
-                    visible: true,
-                    title: 'File Too Large',
-                    message: 'Videos must be smaller than 50MB.',
-                    type: 'error'
-                });
-                return;
-            }
-
             setMedia([...media, {
                 uri: asset.uri,
-                type: isVideo ? 'video' : 'image',
-                fileSize
+                type: asset.type === 'video' ? 'video' : 'image',
+                fileSize: asset.fileSize
             }]);
             triggerHaptic();
         }
@@ -178,53 +260,34 @@ export default function ReportCrimeScreen() {
         triggerHaptic();
     };
 
-    // uploadFile removed as it's now handled by ReportService.uploadMedia
-
     const handleSubmit = async () => {
-        if (!type || !description || !coords) {
+        if (!type || !description || !coords || !street || !lga || !state) {
             setAlert({
                 visible: true,
                 title: 'Missing Info',
-                message: 'Please provide report type, description, and ensure location is fetched.',
+                message: 'Please fill all mandatory fields.',
                 type: 'error'
             });
             return;
         }
-
-        if (type === ReportType.OTHER && !otherTitle.trim()) {
-            setAlert({
-                visible: true,
-                title: 'Missing Info',
-                message: 'Please provide a title for "Other" report type.',
-                type: 'error'
-            });
-            return;
-        }
-
-        // Mandatory location validation
-        if (!street.trim() || !lga.trim() || !state.trim()) {
-            setAlert({
-                visible: true,
-                title: 'Missing Info',
-                message: 'Street, LGA, and State are mandatory.',
-                type: 'error'
-            });
-            return;
-        }
-
-        setLoading(true);
-        setUploadProgress(0);
 
         try {
-            // Upload media first via server
+            setLoading(true);
+            setUploadProgress(0);
+
             const mediaUrls: string[] = [];
             for (let i = 0; i < media.length; i++) {
-                const url = await ReportService.uploadMedia(media[i].uri, media[i].type);
-                mediaUrls.push(url);
+                // If the media is already a URL (from edit mode), don't re-upload
+                if (media[i].uri.startsWith('http')) {
+                    mediaUrls.push(media[i].uri);
+                } else {
+                    const url = await ReportService.uploadMedia(media[i].uri, media[i].type);
+                    mediaUrls.push(url);
+                }
                 setUploadProgress(((i + 1) / media.length) * 100);
             }
 
-            await ReportService.createReport({
+            const reportData = {
                 type,
                 location: {
                     latitude: coords.latitude,
@@ -237,15 +300,26 @@ export default function ReportCrimeScreen() {
                 description,
                 media: mediaUrls,
                 otherTitle: type === ReportType.OTHER ? otherTitle : undefined,
-            });
+            };
+
+            if (editId) {
+                await ReportService.updateReport(editId, reportData);
+            } else {
+                await ReportService.createReport(reportData);
+            }
 
             triggerHaptic();
             setAlert({
                 visible: true,
                 title: 'Success',
-                message: 'Your report has been submitted. Our admin team will perform verification before approval.',
+                message: editId
+                    ? 'Your report has been updated and is pending re-verification.'
+                    : 'Your report has been submitted for verification.',
                 type: 'success'
             });
+            setShowFormModal(false);
+            setEditId(null);
+            fetchReports(1, true);
         } catch (error) {
             console.error('Error submitting report:', error);
             setAlert({
@@ -265,214 +339,125 @@ export default function ReportCrimeScreen() {
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-            <KeyboardAvoidingView
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                style={{ flex: 1 }}
-            >
-                <View style={styles.header}>
-                    <Text style={[styles.headerTitle, { color: colors.text }]}>Report an Incident</Text>
+            <View style={styles.header}>
+                <Text style={[styles.headerTitle, { color: colors.text }]}>Report History</Text>
+            </View>
+
+            {loadingReports && page === 1 ? (
+                <View style={styles.centered}>
+                    <ActivityIndicator size="large" color={colors.primary} />
                 </View>
-
-                {!coords && !fetchingLocation && (
-                    <View style={[styles.locationWarning, { backgroundColor: colors.error + '10' }]}>
-                        <Ionicons name="warning-outline" size={20} color={colors.error} />
-                        <Text style={[styles.locationWarningText, { color: colors.error }]}>
-                            Location access is required to submit a report.
-                        </Text>
-                        <TouchableOpacity onPress={fetchLocation} style={styles.grantAccessButton}>
-                            <Text style={{ color: colors.primary, fontWeight: '700' }}>Retry</Text>
-                        </TouchableOpacity>
-                    </View>
-                )}
-
-                <ScrollView
-                    contentContainerStyle={[styles.scrollContent, isFormDisabled && { opacity: 0.5 }]}
-                    pointerEvents={isFormDisabled ? 'none' : 'auto'}
-                >
-                    <Text style={[styles.sectionTitle, { color: colors.text }]}>What happened?</Text>
-
-                    <TouchableOpacity
-                        style={[styles.selectInput, { backgroundColor: colors.card, borderColor: colors.border }]}
-                        onPress={() => setShowTypeModal(true)}
-                        disabled={isFormDisabled}
-                    >
-                        <View style={styles.selectInputContent}>
-                            <Ionicons
-                                name={REPORT_TYPES.find(t => t.value === type)?.icon as any || "help-circle-outline"}
-                                size={24}
-                                color={type ? colors.primary : colors.subtext}
-                            />
-                            <Text style={[styles.selectValue, { color: type ? colors.text : colors.subtext }]}>
-                                {selectedTypeLabel}
-                            </Text>
-                        </View>
-                        <Ionicons name="chevron-down" size={20} color={colors.subtext} />
-                    </TouchableOpacity>
-
-                    {type === ReportType.OTHER && (
-                        <View style={{ marginTop: 16 }}>
-                            <Text style={[styles.sectionTitle, { color: colors.text, fontSize: 14 }]}>Incident Title</Text>
-                            <TextInput
-                                style={[
-                                    styles.titleInput,
-                                    {
-                                        backgroundColor: colors.card,
-                                        color: colors.text,
-                                        borderColor: colors.border,
-                                    },
-                                ]}
-                                placeholder="Enter report title..."
-                                placeholderTextColor={colors.subtext}
-                                value={otherTitle}
-                                onChangeText={setOtherTitle}
-                                editable={!isFormDisabled}
-                            />
-                        </View>
+            ) : (
+                <FlatList
+                    data={reports}
+                    renderItem={renderReportItem}
+                    keyExtractor={item => item.id}
+                    contentContainerStyle={styles.listContent}
+                    onEndReached={handleLoadMore}
+                    onEndReachedThreshold={0.5}
+                    refreshControl={
+                        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.primary} />
+                    }
+                    ListFooterComponent={() => (
+                        loadingMore ? <ActivityIndicator style={{ padding: 20 }} color={colors.primary} /> : null
                     )}
-
-                    <Text style={[styles.sectionTitle, { color: colors.text, marginTop: 24 }]}>Description</Text>
-                    <TextInput
-                        style={[
-                            styles.input,
-                            {
-                                backgroundColor: colors.card,
-                                color: colors.text,
-                                borderColor: colors.border,
-                            },
-                        ]}
-                        placeholder="Tell us what happened..."
-                        placeholderTextColor={colors.subtext}
-                        multiline
-                        numberOfLines={4}
-                        value={description}
-                        onChangeText={setDescription}
-                        editable={!isFormDisabled}
-                    />
-
-                    <Text style={[styles.sectionTitle, { color: colors.text, marginTop: 24 }]}>Location Details</Text>
-                    <View style={styles.manualLocationGrid}>
-                        <View style={styles.manualLocationItem}>
-                            <Text style={[styles.inputLabel, { color: colors.subtext }]}>Street/Area *</Text>
-                            <TextInput
-                                style={[styles.manualInput, { backgroundColor: colors.card, color: colors.text, borderColor: colors.border }]}
-                                placeholder="e.g. Allen Avenue"
-                                placeholderTextColor={colors.subtext}
-                                value={street}
-                                onChangeText={setStreet}
-                                editable={!isFormDisabled}
-                            />
-                        </View>
-                        <View style={styles.manualLocationItem}>
-                            <Text style={[styles.inputLabel, { color: colors.subtext }]}>Nearest Landmark (Optional)</Text>
-                            <TextInput
-                                style={[styles.manualInput, { backgroundColor: colors.card, color: colors.text, borderColor: colors.border }]}
-                                placeholder="e.g. Zenith Bank"
-                                placeholderTextColor={colors.subtext}
-                                value={landmark}
-                                onChangeText={setLandmark}
-                                editable={!isFormDisabled}
-                            />
-                        </View>
-                    </View>
-
-                    <View style={styles.manualLocationGrid}>
-                        <View style={styles.manualLocationItem}>
-                            <Text style={[styles.inputLabel, { color: colors.subtext }]}>Local Govt (LGA) *</Text>
-                            <TextInput
-                                style={[styles.manualInput, { backgroundColor: colors.card, color: colors.text, borderColor: colors.border }]}
-                                placeholder="e.g. Ikeja"
-                                placeholderTextColor={colors.subtext}
-                                value={lga}
-                                onChangeText={setLga}
-                                editable={!isFormDisabled}
-                            />
-                        </View>
-                        <View style={styles.manualLocationItem}>
-                            <Text style={[styles.inputLabel, { color: colors.subtext }]}>State *</Text>
-                            <TextInput
-                                style={[styles.manualInput, { backgroundColor: colors.card, color: colors.text, borderColor: colors.border }]}
-                                placeholder="e.g. Lagos"
-                                placeholderTextColor={colors.subtext}
-                                value={state}
-                                onChangeText={setState}
-                                editable={!isFormDisabled}
-                            />
-                        </View>
-                    </View>
-
-                    <View style={styles.sectionHeader}>
-                        <Text style={[styles.sectionTitle, { color: colors.text }]}>Media ({media.length}/5)</Text>
-                        <TouchableOpacity onPress={pickMedia} style={styles.addButton} disabled={isFormDisabled}>
-                            <Ionicons name="add-circle" size={24} color={isFormDisabled ? colors.subtext : colors.primary} />
-                        </TouchableOpacity>
-                    </View>
-
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.imagesScroll}>
-                        {media.map((item, index) => (
-                            <View key={index} style={styles.imageWrapper}>
-                                {item.type === 'video' ? (
-                                    <View style={[styles.videoPlaceholder, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                                        <Ionicons name="videocam" size={40} color={colors.primary} />
-                                        <Text style={{ color: colors.subtext, fontSize: 10, marginTop: 4 }}>Video</Text>
-                                    </View>
-                                ) : (
-                                    <Image source={{ uri: item.uri }} style={styles.image} />
-                                )}
+                    ListEmptyComponent={() => (
+                        !loadingReports ? (
+                            <View style={styles.emptyState}>
+                                <Ionicons name="document-text-outline" size={64} color={colors.subtext} />
+                                <Text style={[styles.emptyText, { color: colors.text }]}>No reports yet</Text>
                                 <TouchableOpacity
-                                    style={styles.removeImageButton}
-                                    onPress={() => removeMedia(index)}
+                                    style={[styles.emptyButton, { backgroundColor: colors.primary }]}
+                                    onPress={() => setShowFormModal(true)}
                                 >
-                                    <Ionicons name="close-circle" size={24} color={colors.error} />
+                                    <Text style={styles.emptyButtonText}>Submit Your First Report</Text>
                                 </TouchableOpacity>
                             </View>
-                        ))}
-                        {media.length === 0 && (
-                            <TouchableOpacity style={[styles.imagePlaceholder, { borderColor: colors.border }]} onPress={pickMedia}>
-                                <Ionicons name="camera-outline" size={32} color={colors.subtext} />
-                                <Text style={{ color: colors.subtext, fontSize: 12, marginTop: 8 }}>Add Media</Text>
+                        ) : null
+                    )}
+                />
+            )}
+
+            <Modal visible={showFormModal} animationType="slide" onRequestClose={() => { setShowFormModal(false); setEditId(null); }}>
+                <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+                    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
+                        <View style={styles.modalHeaderClose}>
+                            <Text style={[styles.headerTitle, { color: colors.text }]}>{editId ? 'Edit Report' : 'New Report'}</Text>
+                            <TouchableOpacity onPress={() => { setShowFormModal(false); setEditId(null); }}>
+                                <Ionicons name="close" size={28} color={colors.text} />
                             </TouchableOpacity>
-                        )}
-                    </ScrollView>
-
-                    <View style={[styles.locationCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                        <View style={styles.locationHeader}>
-                            <Ionicons name="location" size={20} color={colors.primary} />
-                            <Text style={[styles.locationTitle, { color: colors.text }]}>Location</Text>
-                            {fetchingLocation && <ActivityIndicator size="small" color={colors.primary} style={{ marginLeft: 8 }} />}
                         </View>
-                        <Text style={[styles.locationText, { color: colors.subtext }]}>
-                            {coords
-                                ? `Lat: ${coords.latitude.toFixed(4)}, Lng: ${coords.longitude.toFixed(4)}`
-                                : 'Fetching your location...'}
-                        </Text>
-                        <TouchableOpacity onPress={fetchLocation} style={styles.refreshLocation}>
-                            <Text style={{ color: colors.primary, fontWeight: '600' }}>Refresh</Text>
-                        </TouchableOpacity>
-                    </View>
+                        <ScrollView contentContainerStyle={styles.scrollContent}>
+                            <Text style={[styles.sectionTitle, { color: colors.text }]}>What happened?</Text>
+                            <TouchableOpacity
+                                style={[styles.selectInput, { backgroundColor: colors.card, borderColor: colors.border }]}
+                                onPress={() => setShowTypeModal(true)}
+                            >
+                                <View style={styles.selectInputContent}>
+                                    <Ionicons name={REPORT_TYPES.find(t => t.value === type)?.icon as any || "help-circle-outline"} size={24} color={colors.primary} />
+                                    <Text style={[styles.selectValue, { color: colors.text }]}>{selectedTypeLabel}</Text>
+                                </View>
+                                <Ionicons name="chevron-down" size={20} color={colors.subtext} />
+                            </TouchableOpacity>
 
-                    <TouchableOpacity
-                        style={[
-                            styles.submitButton,
-                            { backgroundColor: loading ? colors.subtext : colors.primary },
-                        ]}
-                        onPress={handleSubmit}
-                        disabled={loading}
-                    >
-                        {loading ? (
-                            <View style={styles.loadingContainer}>
-                                <ActivityIndicator color="#FFF" />
-                                {uploadProgress > 0 && (
-                                    <Text style={styles.uploadProgressText}>
-                                        Uploading... {Math.round(uploadProgress)}%
-                                    </Text>
-                                )}
+                            {type === ReportType.OTHER && (
+                                <TextInput
+                                    style={[styles.titleInput, { backgroundColor: colors.card, color: colors.text, borderColor: colors.border, marginTop: 12 }]}
+                                    placeholder="Enter title..."
+                                    value={otherTitle}
+                                    onChangeText={setOtherTitle}
+                                />
+                            )}
+
+                            <Text style={[styles.sectionTitle, { color: colors.text, marginTop: 24 }]}>Description</Text>
+                            <TextInput
+                                style={[styles.input, { backgroundColor: colors.card, color: colors.text, borderColor: colors.border }]}
+                                placeholder="Describe what happened..."
+                                multiline
+                                numberOfLines={4}
+                                value={description}
+                                onChangeText={setDescription}
+                            />
+
+                            <Text style={[styles.sectionTitle, { color: colors.text, marginTop: 24 }]}>Location</Text>
+                            <View style={styles.manualLocationGrid}>
+                                <View style={styles.manualLocationItem}>
+                                    <TextInput style={styles.manualInput} placeholder="Street" value={street} onChangeText={setStreet} />
+                                </View>
+                                <View style={styles.manualLocationItem}>
+                                    <TextInput style={styles.manualInput} placeholder="LGA" value={lga} onChangeText={setLga} />
+                                </View>
                             </View>
-                        ) : (
-                            <Text style={styles.submitButtonText}>Submit Report</Text>
-                        )}
-                    </TouchableOpacity>
-                </ScrollView>
-            </KeyboardAvoidingView>
+                            <View style={styles.manualLocationGrid}>
+                                <View style={styles.manualLocationItem}>
+                                    <TextInput style={styles.manualInput} placeholder="State" value={state} onChangeText={setState} />
+                                </View>
+                                <View style={styles.manualLocationItem}>
+                                    <TextInput style={styles.manualInput} placeholder="Landmark" value={landmark} onChangeText={setLandmark} />
+                                </View>
+                            </View>
+
+                            <TouchableOpacity
+                                style={[styles.submitButton, { backgroundColor: colors.primary }]}
+                                onPress={handleSubmit}
+                                disabled={loading}
+                            >
+                                {loading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.submitButtonText}>{editId ? 'Update Report' : 'Submit Report'}</Text>}
+                            </TouchableOpacity>
+                        </ScrollView>
+                    </KeyboardAvoidingView>
+                </SafeAreaView>
+            </Modal>
+
+            {!showFormModal && (
+                <TouchableOpacity
+                    style={[styles.fab, { backgroundColor: colors.primary }]}
+                    onPress={() => { setShowFormModal(true); triggerHaptic(); }}
+                >
+                    <Ionicons name="megaphone" size={28} color="#FFF" />
+                    <Text style={styles.fabText}>Report</Text>
+                </TouchableOpacity>
+            )}
 
             <AlertModal
                 isVisible={alert.visible}
@@ -490,64 +475,24 @@ export default function ReportCrimeScreen() {
                         setLga('');
                         setState('');
                         setLandmark('');
-                        router.replace('/');
+                        setEditId(null);
                     }
                 }}
             />
-            <Modal
-                visible={showTypeModal}
-                transparent
-                animationType="slide"
-                onRequestClose={() => setShowTypeModal(false)}
-            >
-                <View style={styles.modalOverlay}>
-                    <TouchableOpacity
-                        style={styles.modalBackground}
-                        activeOpacity={1}
-                        onPress={() => setShowTypeModal(false)}
-                    />
-                    <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
-                        <View style={styles.modalHeader}>
-                            <Text style={[styles.modalTitle, { color: colors.text }]}>Select Incident Type</Text>
-                            <TouchableOpacity onPress={() => setShowTypeModal(false)}>
-                                <Ionicons name="close" size={24} color={colors.text} />
-                            </TouchableOpacity>
-                        </View>
 
+            <Modal visible={showTypeModal} transparent animationType="fade">
+                <View style={styles.modalOverlay}>
+                    <TouchableOpacity style={styles.modalBackground} onPress={() => setShowTypeModal(false)} />
+                    <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
                         <ScrollView style={styles.modalList}>
-                            {REPORT_TYPES.map((item) => (
+                            {REPORT_TYPES.map(item => (
                                 <TouchableOpacity
                                     key={item.value}
-                                    style={[
-                                        styles.typeItem,
-                                        {
-                                            backgroundColor: type === item.value ? colors.primary + '15' : 'transparent',
-                                            borderBottomColor: colors.border
-                                        }
-                                    ]}
-                                    onPress={() => {
-                                        setType(item.value);
-                                        setShowTypeModal(false);
-                                        triggerHaptic();
-                                    }}
+                                    style={styles.typeItem}
+                                    onPress={() => { setType(item.value); setShowTypeModal(false); }}
                                 >
-                                    <Ionicons
-                                        name={item.icon as any}
-                                        size={22}
-                                        color={type === item.value ? colors.primary : colors.text}
-                                    />
-                                    <Text style={[
-                                        styles.typeItemLabel,
-                                        {
-                                            color: type === item.value ? colors.primary : colors.text,
-                                            fontWeight: type === item.value ? '700' : '500'
-                                        }
-                                    ]}>
-                                        {item.label}
-                                    </Text>
-                                    {type === item.value && (
-                                        <Ionicons name="checkmark" size={20} color={colors.primary} />
-                                    )}
+                                    <Ionicons name={item.icon as any} size={22} color={colors.primary} />
+                                    <Text style={[styles.typeItemLabel, { color: colors.text }]}>{item.label}</Text>
                                 </TouchableOpacity>
                             ))}
                         </ScrollView>
@@ -559,236 +504,45 @@ export default function ReportCrimeScreen() {
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-    },
-    header: {
-        paddingHorizontal: 20,
-        paddingVertical: 16,
-        alignItems: 'center',
-        borderBottomWidth: 1,
-        borderBottomColor: 'rgba(0,0,0,0.05)',
-    },
-    headerTitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
-    },
-    scrollContent: {
-        padding: 20,
-    },
-    sectionTitle: {
-        fontSize: 16,
-        fontWeight: '700',
-        marginBottom: 12,
-    },
-    sectionHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginTop: 24,
-        marginBottom: 12,
-    },
-    selectInput: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: 16,
-        borderRadius: 16,
-        borderWidth: 1,
-        marginBottom: 8,
-    },
-    selectInputContent: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    selectValue: {
-        fontSize: 16,
-        fontWeight: '500',
-        marginLeft: 12,
-    },
-    titleInput: {
-        borderRadius: 16,
-        borderWidth: 1,
-        padding: 16,
-        fontSize: 16,
-        height: 56,
-    },
-    input: {
-        borderRadius: 16,
-        borderWidth: 1,
-        padding: 16,
-        fontSize: 14,
-        minHeight: 120,
-        textAlignVertical: 'top',
-    },
-    imagesScroll: {
-        flexDirection: 'row',
-        marginBottom: 4,
-    },
-    imageWrapper: {
-        marginRight: 12,
-        position: 'relative',
-    },
-    image: {
-        width: 100,
-        height: 100,
-        borderRadius: 12,
-    },
-    videoPlaceholder: {
-        width: 100,
-        height: 100,
-        borderRadius: 12,
-        borderWidth: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    removeImageButton: {
-        position: 'absolute',
-        top: -8,
-        right: -8,
-        zIndex: 1,
-    },
-    imagePlaceholder: {
-        width: 100,
-        height: 100,
-        borderRadius: 12,
-        borderWidth: 2,
-        borderStyle: 'dashed',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    addButton: {
-        padding: 4,
-    },
-    locationCard: {
-        marginTop: 24,
-        padding: 16,
-        borderRadius: 16,
-        borderWidth: 1,
-    },
-    locationHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 8,
-    },
-    locationTitle: {
-        fontSize: 16,
-        fontWeight: '600',
-        marginLeft: 8,
-    },
-    locationText: {
-        fontSize: 14,
-    },
-    refreshLocation: {
-        marginTop: 12,
-        alignSelf: 'flex-end',
-    },
-    submitButton: {
-        marginTop: 32,
-        height: 56,
-        borderRadius: 18,
-        justifyContent: 'center',
-        alignItems: 'center',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
-        shadowRadius: 8,
-        elevation: 5,
-        marginBottom: 40,
-    },
-    submitButtonText: {
-        color: '#FFF',
-        fontSize: 18,
-        fontWeight: 'bold',
-    },
-    locationWarning: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: 12,
-        marginHorizontal: 20,
-        marginVertical: 10,
-        borderRadius: 12,
-    },
-    locationWarningText: {
-        flex: 1,
-        fontSize: 13,
-        fontWeight: '500',
-        marginLeft: 8,
-    },
-    grantAccessButton: {
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-    },
-    manualLocationGrid: {
-        flexDirection: 'row',
-        gap: 12,
-        marginBottom: 12,
-    },
-    manualLocationItem: {
-        flex: 1,
-    },
-    inputLabel: {
-        fontSize: 12,
-        fontWeight: '600',
-        marginBottom: 6,
-        marginLeft: 4,
-    },
-    manualInput: {
-        borderRadius: 12,
-        borderWidth: 1,
-        padding: 12,
-        fontSize: 14,
-        height: 48,
-    },
-    loadingContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    uploadProgressText: {
-        color: '#FFF',
-        marginLeft: 12,
-        fontSize: 14,
-        fontWeight: '600',
-    },
-    modalOverlay: {
-        flex: 1,
-        justifyContent: 'flex-end',
-    },
-    modalBackground: {
-        ...StyleSheet.absoluteFillObject,
-        backgroundColor: 'rgba(0,0,0,0.5)',
-    },
-    modalContent: {
-        borderTopLeftRadius: 32,
-        borderTopRightRadius: 32,
-        paddingTop: 24,
-        paddingBottom: Platform.OS === 'ios' ? 48 : 24,
-        maxHeight: SCREEN_HEIGHT * 0.7,
-    },
-    modalHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingHorizontal: 24,
-        marginBottom: 20,
-    },
-    modalTitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
-    },
-    modalList: {
-        paddingHorizontal: 16,
-    },
-    typeItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: 18,
-        borderRadius: 16,
-        borderBottomWidth: StyleSheet.hairlineWidth,
-    },
-    typeItemLabel: {
-        flex: 1,
-        fontSize: 16,
-        marginLeft: 16,
-    },
+    container: { flex: 1 },
+    header: { padding: 20, alignItems: 'center', borderBottomWidth: 1, borderBottomColor: 'rgba(0,0,0,0.05)' },
+    headerTitle: { fontSize: 20, fontWeight: 'bold' },
+    centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+    listContent: { padding: 20 },
+    reportCard: { padding: 16, borderRadius: 16, borderWidth: 1, marginBottom: 12 },
+    reportHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
+    reportTypeContainer: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    reportType: { fontWeight: 'bold' },
+    statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
+    statusText: { fontSize: 12, fontWeight: 'bold' },
+    reportDescription: { marginBottom: 12 },
+    reportFooter: { flexDirection: 'row', justifyContent: 'space-between' },
+    reportLocation: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+    reportLocationText: { fontSize: 12 },
+    reportDate: { fontSize: 12 },
+    emptyState: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
+    emptyText: { fontSize: 18, marginVertical: 12 },
+    emptyButton: { padding: 16, borderRadius: 12 },
+    emptyButtonText: { color: '#FFF', fontWeight: 'bold' },
+    modalHeaderClose: { flexDirection: 'row', justifyContent: 'space-between', padding: 20, alignItems: 'center' },
+    scrollContent: { padding: 20 },
+    sectionTitle: { fontSize: 16, fontWeight: 'bold' },
+    selectInput: { flexDirection: 'row', justifyContent: 'space-between', padding: 16, borderRadius: 12, borderWidth: 1 },
+    selectInputContent: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+    selectValue: { fontSize: 16 },
+    titleInput: { padding: 16, borderRadius: 12, borderWidth: 1 },
+    input: { padding: 16, borderRadius: 12, borderWidth: 1, minHeight: 100, textAlignVertical: 'top' },
+    manualLocationGrid: { flexDirection: 'row', gap: 12, marginTop: 12 },
+    manualLocationItem: { flex: 1 },
+    manualInput: { padding: 12, borderRadius: 8, borderWidth: 1, borderColor: '#DDD' },
+    submitButton: { marginTop: 20, padding: 16, borderRadius: 12, alignItems: 'center' },
+    submitButtonText: { color: '#FFF', fontWeight: 'bold' },
+    fab: { position: 'absolute', bottom: 30, right: 20, padding: 16, borderRadius: 30, flexDirection: 'row', alignItems: 'center', gap: 8, elevation: 5 },
+    fabText: { color: '#FFF', fontWeight: 'bold' },
+    modalOverlay: { flex: 1, justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.5)' },
+    modalBackground: { ...StyleSheet.absoluteFillObject },
+    modalContent: { margin: 20, borderRadius: 16, padding: 20, maxHeight: '80%' },
+    modalList: { marginTop: 10 },
+    typeItem: { flexDirection: 'row', alignItems: 'center', padding: 12, gap: 12 },
+    typeItemLabel: { fontSize: 16 },
 });
