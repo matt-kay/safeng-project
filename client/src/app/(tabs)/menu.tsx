@@ -89,6 +89,14 @@ export default function MenuScreen() {
                         <Text style={[styles.profileLabel, { color: colors.text }]}>Change Phone Number</Text>
                         <Ionicons name="chevron-forward" size={20} color={colors.chevron} />
                     </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[styles.profileItem, { backgroundColor: colors.card }]}
+                        onPress={() => { triggerHaptic(); router.push('/sos-management'); }}
+                    >
+                        <Ionicons name="shield-checkmark-outline" size={20} color={colors.primary} style={styles.profileIcon} />
+                        <Text style={[styles.profileLabel, { color: colors.text }]}>Manage SOS Subscription</Text>
+                        <Ionicons name="chevron-forward" size={20} color={colors.chevron} />
+                    </TouchableOpacity>
 
                 </View>
 

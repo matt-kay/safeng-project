@@ -6,7 +6,7 @@ import * as admin from 'firebase-admin';
 export class FirebaseService implements OnModuleInit {
   private app: admin.app.App;
 
-  constructor(private configService: ConfigService) {}
+  constructor(private configService: ConfigService) { }
 
   onModuleInit() {
     const isDev = this.configService.get<string>('NODE_ENV') === 'development';
@@ -39,5 +39,12 @@ export class FirebaseService implements OnModuleInit {
 
   getFirestore(): admin.firestore.Firestore {
     return this.app.firestore();
+  }
+
+  async updateUserClaims(uid: string, claims: object): Promise<void> {
+    const auth = this.getAuth();
+    const user = await auth.getUser(uid);
+    const existingClaims = user.customClaims || {};
+    await auth.setCustomUserClaims(uid, { ...existingClaims, ...claims });
   }
 }

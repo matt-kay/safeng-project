@@ -4,6 +4,8 @@ import type { IUserRepository } from '../ports/user.repository.interface';
 import { Inject, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { UserAccessPolicy } from '../../domain/patterns/user-access.policy';
 import { UserAggregate } from '../../domain/aggregates/user.aggregate';
+import { FirestoreEmergencyContactRepository } from '../../infrastructure/repositories/firestore-emergency-contact.repository';
+import { EmergencyContact } from '../../domain/value-objects/emergency-contact';
 
 export class GetUserProfileQuery {
   constructor(
@@ -16,6 +18,7 @@ export class GetUserProfileQuery {
 export class GetUserProfileHandler implements IQueryHandler<GetUserProfileQuery> {
   constructor(
     @Inject(IUserRepositoryToken) private readonly userRepo: IUserRepository,
+    private readonly emergencyContactRepo: FirestoreEmergencyContactRepository,
   ) { }
 
   async execute(query: GetUserProfileQuery) {
@@ -41,12 +44,14 @@ export class GetUserProfileHandler implements IQueryHandler<GetUserProfileQuery>
         }
       }
 
+      const emergencyContacts = await this.emergencyContactRepo.getContacts(targetUid);
+
       if (targetUser.isProfileMissing()) {
         // Return 200 with profile_missing flag instead of 404
-        return this.mapToSelfView(targetUser, targetUid);
+        return this.mapToSelfView(targetUser, targetUid, emergencyContacts);
       }
 
-      return this.mapToSelfView(targetUser, targetUid);
+      return this.mapToSelfView(targetUser, targetUid, emergencyContacts);
     } else {
       if (!callerUser) throw new ForbiddenException();
       const policy = new UserAccessPolicy(callerUser);
@@ -57,11 +62,13 @@ export class GetUserProfileHandler implements IQueryHandler<GetUserProfileQuery>
       if (!targetPolicy.canAccessSelf() && !policy.isAdmin()) {
         throw new ForbiddenException();
       }
-      return this.mapToAdminView(targetUser);
+
+      const emergencyContacts = await this.emergencyContactRepo.getContacts(targetUid);
+      return this.mapToAdminView(targetUser, emergencyContacts);
     }
   }
 
-  private mapToSelfView(user: UserAggregate, uid: string) {
+  private mapToSelfView(user: UserAggregate, uid: string, emergencyContacts: EmergencyContact[] = []) {
     const identityEmail = user.identity.email;
     const identityPhone = user.identity.phoneNumber.getValue;
 
@@ -101,6 +108,7 @@ export class GetUserProfileHandler implements IQueryHandler<GetUserProfileQuery>
       created_at: user.profile!.created_at,
       updated_at: user.profile!.updated_at,
       effective_status: user.effective_status,
+      sos_subscription_active: user.profile!.sos_subscription_active,
       // Keep identity for admin/discovery if needed, but the main model is flat
       identity: {
         phoneNumber: user.identity.phoneNumber.getValue,
@@ -110,8 +118,8 @@ export class GetUserProfileHandler implements IQueryHandler<GetUserProfileQuery>
     };
   }
 
-  private mapToAdminView(user: UserAggregate) {
-    const view: any = this.mapToSelfView(user, user.uid);
+  private mapToAdminView(user: UserAggregate, emergencyContacts: EmergencyContact[] = []) {
+    const view: any = this.mapToSelfView(user, user.uid, emergencyContacts);
     view.identity = {
       ...view.identity,
       disabled: user.identity.disabled,

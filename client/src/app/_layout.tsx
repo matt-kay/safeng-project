@@ -13,16 +13,6 @@ import { SettingsProvider, useSettings } from '@/context/SettingsContext';
 import { ConfirmationProvider } from '@/context/ConfirmationContext';
 import { WebConfirmationDialog } from '@/components/WebConfirmationDialog';
 
-export {
-  // Catch any errors thrown by the Layout component.
-  ErrorBoundary,
-} from 'expo-router';
-
-export const unstable_settings = {
-  // Ensure that reloading on `/modal` keeps a back button present.
-  initialRouteName: '(tabs)',
-};
-
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
@@ -99,11 +89,20 @@ function NavigationGuard({ children }: { children: React.ReactNode }) {
     }
   }, [hasSeenOnboarding, user, profile, isLoading, segments, showSplash]);
 
-  if (!loaded || isLoading || showSplash) {
-    return <CustomSplash />;
+  if (!loaded) {
+    return null;
   }
 
-  return <>{children}</>;
+  return (
+    <>
+      {children}
+      {(isLoading || showSplash) && (
+        <View style={StyleSheet.absoluteFill}>
+          <CustomSplash />
+        </View>
+      )}
+    </>
+  );
 }
 
 function RootLayoutContent() {

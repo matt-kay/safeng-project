@@ -50,6 +50,27 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="sos-setup"
+        options={{
+          title: 'Setup Contacts',
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="sos-management"
+        options={{
+          title: 'SOS Emergency',
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="sos-callback"
+        options={{
+          title: 'SOS Callback',
+          href: null,
+        }}
+      />
+      <Tabs.Screen
         name="menu"
         options={{
           title: 'Menu',

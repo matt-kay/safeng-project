@@ -1,5 +1,13 @@
 import apiClient from './api-client';
 
+export interface EmergencyContact {
+    firstName: string;
+    lastName: string;
+    email: string;
+    phoneNumber: string;
+    relationship?: string;
+}
+
 export interface UserProfile {
     id: string;
     email: string;
@@ -9,6 +17,7 @@ export interface UserProfile {
     isProfileComplete: boolean;
     role?: 'customer' | 'admin';
     status?: string;
+    sos_subscription_active?: boolean;
 }
 
 export class UserService {
@@ -22,7 +31,8 @@ export class UserService {
             phoneNumber: data.phone_number,
             isProfileComplete: !data.profile_missing,
             role: data.role,
-            status: data.status
+            status: data.status,
+            sos_subscription_active: data.sos_subscription_active
         };
     }
 
@@ -41,7 +51,8 @@ export class UserService {
             phoneNumber: data.phone_number,
             isProfileComplete: true,
             role: data.role,
-            status: data.status
+            status: data.status,
+            sos_subscription_active: data.sos_subscription_active
         };
     }
 
@@ -61,11 +72,26 @@ export class UserService {
             phoneNumber: data.phone_number,
             isProfileComplete: true,
             role: data.role,
-            status: data.status
+            status: data.status,
+            sos_subscription_active: data.sos_subscription_active
         };
     }
 
     static async deleteAccount(): Promise<void> {
         await apiClient.delete('/me');
+    }
+
+    static async initializeSOSSubscription(platform: string = 'web'): Promise<{ authorization_url: string; reference: string }> {
+        const { data } = await apiClient.post<any>('/payments/paystack/initialize-sos', { platform });
+        return data;
+    }
+
+    static async updateSOSContacts(contacts: EmergencyContact[]): Promise<void> {
+        await apiClient.post('/sos/contacts', contacts);
+    }
+
+    static async getSOSStatus(): Promise<{ subscribed: boolean; contacts: EmergencyContact[] }> {
+        const { data } = await apiClient.get<any>('/sos/status');
+        return data;
     }
 }

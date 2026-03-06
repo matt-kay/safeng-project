@@ -16,6 +16,10 @@ interface AlertModalProps {
     title: string;
     message: string;
     type?: 'success' | 'error' | 'info';
+    primaryButtonText?: string;
+    onPrimaryPress?: () => void;
+    secondaryButtonText?: string;
+    onSecondaryPress?: () => void;
     onDismiss: () => void;
 }
 
@@ -24,6 +28,10 @@ export default function AlertModal({
     title,
     message,
     type = 'info',
+    primaryButtonText = 'OK',
+    onPrimaryPress,
+    secondaryButtonText,
+    onSecondaryPress,
     onDismiss
 }: AlertModalProps) {
     const { colors, triggerHaptic } = useSettings();
@@ -92,11 +100,31 @@ export default function AlertModal({
                         style={[styles.primaryBtn, { backgroundColor: getIconColor() }]}
                         onPress={() => {
                             triggerHaptic();
-                            onDismiss();
+                            if (onPrimaryPress) {
+                                onPrimaryPress();
+                            } else {
+                                onDismiss();
+                            }
                         }}
                     >
-                        <Text style={styles.primaryBtnText}>OK</Text>
+                        <Text style={styles.primaryBtnText}>{primaryButtonText}</Text>
                     </TouchableOpacity>
+
+                    {secondaryButtonText && (
+                        <TouchableOpacity
+                            style={styles.secondaryBtn}
+                            onPress={() => {
+                                triggerHaptic();
+                                if (onSecondaryPress) {
+                                    onSecondaryPress();
+                                } else {
+                                    onDismiss();
+                                }
+                            }}
+                        >
+                            <Text style={[styles.secondaryBtnText, { color: colors.subtext }]}>{secondaryButtonText}</Text>
+                        </TouchableOpacity>
+                    )}
                 </Animated.View>
             </View>
         </Modal>
@@ -160,5 +188,16 @@ const styles = StyleSheet.create({
         color: '#FFF',
         fontSize: 17,
         fontWeight: '700',
+    },
+    secondaryBtn: {
+        width: '100%',
+        height: 50,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginTop: 8,
+    },
+    secondaryBtnText: {
+        fontSize: 16,
+        fontWeight: '600',
     },
 });

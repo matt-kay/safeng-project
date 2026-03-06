@@ -1,6 +1,9 @@
 import { PhoneNumber } from '../value-objects/phone-number';
 import { UserRole } from '../value-objects/user-role';
 import { UserStatus } from '../value-objects/user-status';
+import { EmergencyContact } from '../value-objects/emergency-contact';
+
+export type { EmergencyContact };
 
 export class UserProfile {
   constructor(
@@ -19,5 +22,6 @@ export class UserProfile {
     public deleted_by?: string,
     public deleted_reason?: string,
     public stripeCustomerId?: string,
-  ) {}
+    public sos_subscription_active: boolean = false,
+  ) { }
 }

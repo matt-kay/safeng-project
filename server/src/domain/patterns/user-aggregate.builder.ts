@@ -35,6 +35,7 @@ export interface ProfileData {
   deleted_by?: string;
   deleted_reason?: string;
   stripeCustomerId?: string;
+  sos_subscription_active?: boolean;
 }
 
 export class UserAggregateBuilder {
@@ -82,6 +83,7 @@ export class UserAggregateBuilder {
         data.deleted_by,
         data.deleted_reason,
         data.stripeCustomerId,
+        data.sos_subscription_active || false,
       );
     } else {
       this.profile = null;
