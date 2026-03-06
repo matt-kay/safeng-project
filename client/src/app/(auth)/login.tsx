@@ -14,21 +14,14 @@ export default function LoginScreen() {
     const [phoneNumber, setPhoneNumber] = useState('');
     const [selectedCountry, setSelectedCountry] = useState(COUNTRIES[0]);
     const [loading, setLoading] = useState(false);
-    const [maintenanceMode, setMaintenanceMode] = useState(false);
-    const [checkingSettings, setCheckingSettings] = useState(true);
+
     const { signIn } = useAuth();
     const router = useRouter();
     const { colors, resolvedTheme, triggerHaptic } = useSettings();
 
     const isDark = resolvedTheme === 'dark';
 
-    useEffect(() => {
-        portalSettingsService
-            .getPublicSettings()
-            .then((settings) => setMaintenanceMode(settings.maintenanceMode))
-            .catch(() => { /* fail open — let user try to sign in */ })
-            .finally(() => setCheckingSettings(false));
-    }, []);
+
 
     const handleSignIn = async () => {
         triggerHaptic();
@@ -68,57 +61,34 @@ export default function LoginScreen() {
                             <Text style={[styles.subtitle, { color: colors.subtext }]}>Sign in with your phone number to continue</Text>
                         </View>
 
-                        {checkingSettings ? (
-                            <View style={styles.loadingContainer}>
-                                <ActivityIndicator size="small" color={colors.primary} />
-                            </View>
-                        ) : maintenanceMode ? (
-                            <View style={[
-                                styles.maintenanceBanner,
-                                {
-                                    backgroundColor: isDark ? '#2a1800' : '#fff8e6',
-                                    borderColor: '#f59e0b',
-                                }
-                            ]}>
-                                <Text style={styles.maintenanceIcon}>🔧</Text>
-                                <Text style={[styles.maintenanceTitle, { color: isDark ? '#fbbf24' : '#92400e' }]}>
-                                    Down for Maintenance
-                                </Text>
-                                <Text style={[styles.maintenanceMessage, { color: isDark ? '#d97706' : '#b45309' }]}>
-                                    We're currently performing scheduled maintenance to improve your experience.
-                                    Sign-in is temporarily unavailable — please check back shortly.
-                                </Text>
-                            </View>
-                        ) : (
-                            <View style={styles.form}>
-                                <PhoneInput
-                                    phoneNumber={phoneNumber}
-                                    setPhoneNumber={setPhoneNumber}
-                                    selectedCountry={selectedCountry}
-                                    setSelectedCountry={setSelectedCountry}
-                                    autoFocus
-                                />
+                        <View style={styles.form}>
+                            <PhoneInput
+                                phoneNumber={phoneNumber}
+                                setPhoneNumber={setPhoneNumber}
+                                selectedCountry={selectedCountry}
+                                setSelectedCountry={setSelectedCountry}
+                                autoFocus
+                            />
 
-                                <TouchableOpacity
-                                    style={[
-                                        styles.button,
-                                        { backgroundColor: colors.primary },
-                                        (!phoneNumber || loading) && { backgroundColor: isDark ? colors.primary + '40' : colors.primary + '80' }
-                                    ]}
-                                    onPress={handleSignIn}
-                                    disabled={!phoneNumber || loading}
-                                >
-                                    <Text style={styles.buttonText}>
-                                        {loading ? 'Sending Code...' : 'Continue'}
-                                    </Text>
-                                </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[
+                                    styles.button,
+                                    { backgroundColor: colors.primary },
+                                    (!phoneNumber || loading) && { backgroundColor: isDark ? colors.primary + '40' : colors.primary + '80' }
+                                ]}
+                                onPress={handleSignIn}
+                                disabled={!phoneNumber || loading}
+                            >
+                                <Text style={styles.buttonText}>
+                                    {loading ? 'Sending Code...' : 'Continue'}
+                                </Text>
+                            </TouchableOpacity>
 
-                                <View
-                                    id="recaptcha-container"
-                                    nativeID="recaptcha-container"
-                                />
-                            </View>
-                        )}
+                            <View
+                                id="recaptcha-container"
+                                nativeID="recaptcha-container"
+                            />
+                        </View>
 
                         <View style={styles.footer}>
                             <Text style={[styles.footerText, { color: colors.subtext }]}>By continuing, you agree to our </Text>
@@ -172,28 +142,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingVertical: 40,
     },
-    maintenanceBanner: {
-        borderWidth: 1.5,
-        borderRadius: 16,
-        padding: 24,
-        alignItems: 'center',
-        marginVertical: 32,
-    },
-    maintenanceIcon: {
-        fontSize: 48,
-        marginBottom: 16,
-    },
-    maintenanceTitle: {
-        fontSize: 20,
-        fontWeight: '700',
-        marginBottom: 12,
-        textAlign: 'center',
-    },
-    maintenanceMessage: {
-        fontSize: 14,
-        textAlign: 'center',
-        lineHeight: 22,
-    },
+
     form: {
         width: '100%',
         marginBottom: 40,

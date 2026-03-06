@@ -53,12 +53,32 @@ export class FirestoreReportRepository {
     }
 
     private toFirestore(report: Report): any {
+        const bucketName = this.firebaseService.getStorage().bucket().name;
+
+        const extractPath = (media: string[] | undefined): string[] => {
+            if (!media) return [];
+            return media.map(url => {
+                // If it's an emulator URL or GCS URL, try to extract the path
+                if (url.includes(`/v0/b/${bucketName}/o/`)) {
+                    const parts = url.split('/o/');
+                    if (parts.length > 1) {
+                        const pathPart = parts[1].split('?')[0];
+                        return decodeURIComponent(pathPart);
+                    }
+                }
+                if (url.includes(`storage.googleapis.com/${bucketName}/`)) {
+                    return url.split(`${bucketName}/`)[1];
+                }
+                return url;
+            });
+        };
+
         return {
             userId: report.userId,
             type: report.type,
             location: report.location,
             description: report.description,
-            media: report.media,
+            media: extractPath(report.media),
             otherTitle: report.otherTitle,
             status: report.status,
             rejectionReason: report.rejectionReason,
@@ -68,13 +88,31 @@ export class FirestoreReportRepository {
     }
 
     private fromFirestore(id: string, data: any): Report {
+        const bucketName = this.firebaseService.getStorage().bucket().name;
+        const storageEmulatorHost = process.env.FIREBASE_STORAGE_EMULATOR_HOST;
+
+        const transformMedia = (media: string[] | undefined): string[] => {
+            if (!media) return [];
+            return media.map(item => {
+                if (item.startsWith('http://') || item.startsWith('https://')) {
+                    return item;
+                }
+                // If it's a path, transform it into a URL
+                if (storageEmulatorHost) {
+                    return `http://${storageEmulatorHost}/v0/b/${bucketName}/o/${encodeURIComponent(item)}?alt=media`;
+                }
+                // Fallback to a standard GCS public URL if not in emulator (or signed URL if preferred)
+                return `https://storage.googleapis.com/${bucketName}/${item}`;
+            });
+        };
+
         return new Report(
             id,
             data.userId,
             data.type,
             data.location,
             data.description,
-            data.media,
+            transformMedia(data.media),
             data.otherTitle,
             data.status,
             data.rejectionReason,

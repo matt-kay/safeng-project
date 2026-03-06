@@ -422,19 +422,95 @@ export default function ReportCrimeScreen() {
                             <Text style={[styles.sectionTitle, { color: colors.text, marginTop: 24 }]}>Location</Text>
                             <View style={styles.manualLocationGrid}>
                                 <View style={styles.manualLocationItem}>
-                                    <TextInput style={styles.manualInput} placeholder="Street" value={street} onChangeText={setStreet} />
+                                    <TextInput
+                                        style={[styles.manualInput, { backgroundColor: colors.card, color: colors.text, borderColor: colors.border }]}
+                                        placeholder="Street"
+                                        placeholderTextColor={colors.subtext}
+                                        value={street}
+                                        onChangeText={setStreet}
+                                    />
                                 </View>
                                 <View style={styles.manualLocationItem}>
-                                    <TextInput style={styles.manualInput} placeholder="LGA" value={lga} onChangeText={setLga} />
+                                    <TextInput
+                                        style={[styles.manualInput, { backgroundColor: colors.card, color: colors.text, borderColor: colors.border }]}
+                                        placeholder="LGA"
+                                        placeholderTextColor={colors.subtext}
+                                        value={lga}
+                                        onChangeText={setLga}
+                                    />
                                 </View>
                             </View>
                             <View style={styles.manualLocationGrid}>
                                 <View style={styles.manualLocationItem}>
-                                    <TextInput style={styles.manualInput} placeholder="State" value={state} onChangeText={setState} />
+                                    <TextInput
+                                        style={[styles.manualInput, { backgroundColor: colors.card, color: colors.text, borderColor: colors.border }]}
+                                        placeholder="State"
+                                        placeholderTextColor={colors.subtext}
+                                        value={state}
+                                        onChangeText={setState}
+                                    />
                                 </View>
                                 <View style={styles.manualLocationItem}>
-                                    <TextInput style={styles.manualInput} placeholder="Landmark" value={landmark} onChangeText={setLandmark} />
+                                    <TextInput
+                                        style={[styles.manualInput, { backgroundColor: colors.card, color: colors.text, borderColor: colors.border }]}
+                                        placeholder="Landmark (Optional)"
+                                        placeholderTextColor={colors.subtext}
+                                        value={landmark}
+                                        onChangeText={setLandmark}
+                                    />
                                 </View>
+                            </View>
+                            <View style={styles.sectionHeader}>
+                                <Text style={[styles.sectionTitle, { color: colors.text, marginTop: 24 }]}>Media ({media.length}/5)</Text>
+                                <TouchableOpacity onPress={pickMedia} style={styles.addButton} disabled={isFormDisabled}>
+                                    <Ionicons name="add-circle" size={24} color={isFormDisabled ? colors.subtext : colors.primary} />
+                                </TouchableOpacity>
+                            </View>
+
+                            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.imagesScroll}>
+                                {media.map((item, index) => (
+                                    <View key={index} style={styles.imageWrapper}>
+                                        {item.type === 'video' ? (
+                                            <View style={[styles.videoPlaceholder, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                                                <Ionicons name="videocam" size={40} color={colors.primary} />
+                                                <Text style={{ color: colors.subtext, fontSize: 10, marginTop: 4 }}>Video</Text>
+                                            </View>
+                                        ) : (
+                                            <Image source={{ uri: item.uri }} style={styles.image} />
+                                        )}
+                                        <TouchableOpacity
+                                            style={styles.removeImageButton}
+                                            onPress={() => removeMedia(index)}
+                                        >
+                                            <Ionicons name="close-circle" size={24} color="#EF4444" />
+                                        </TouchableOpacity>
+                                    </View>
+                                ))}
+                                {media.length === 0 && (
+                                    <TouchableOpacity
+                                        style={[styles.imagePlaceholder, { borderColor: colors.border, backgroundColor: colors.card }]}
+                                        onPress={pickMedia}
+                                    >
+                                        <Ionicons name="camera-outline" size={32} color={colors.subtext} />
+                                        <Text style={{ color: colors.subtext, fontSize: 12, marginTop: 8 }}>Add Media</Text>
+                                    </TouchableOpacity>
+                                )}
+                            </ScrollView>
+
+                            <View style={[styles.locationCard, { backgroundColor: colors.card, borderColor: colors.border, marginTop: 24 }]}>
+                                <View style={styles.locationHeader}>
+                                    <Ionicons name="location" size={20} color={colors.primary} />
+                                    <Text style={[styles.locationTitle, { color: colors.text }]}>GPS Coordinates</Text>
+                                    {fetchingLocation && <ActivityIndicator size="small" color={colors.primary} style={{ marginLeft: 8 }} />}
+                                </View>
+                                <Text style={[styles.locationText, { color: colors.subtext }]}>
+                                    {coords
+                                        ? `Lat: ${coords.latitude.toFixed(6)}, Lng: ${coords.longitude.toFixed(6)}`
+                                        : 'Fetching your location...'}
+                                </Text>
+                                <TouchableOpacity onPress={fetchLocation} style={styles.refreshLocation}>
+                                    <Text style={{ color: colors.primary, fontWeight: '600' }}>Refresh GPS</Text>
+                                </TouchableOpacity>
                             </View>
 
                             <TouchableOpacity
@@ -532,9 +608,77 @@ const styles = StyleSheet.create({
     selectValue: { fontSize: 16 },
     titleInput: { padding: 16, borderRadius: 12, borderWidth: 1 },
     input: { padding: 16, borderRadius: 12, borderWidth: 1, minHeight: 100, textAlignVertical: 'top' },
+    sectionHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    addButton: {
+        padding: 4,
+        marginTop: 20,
+    },
+    imagesScroll: {
+        flexDirection: 'row',
+        marginTop: 12,
+        marginBottom: 4,
+    },
+    imageWrapper: {
+        marginRight: 12,
+        position: 'relative',
+    },
+    image: {
+        width: 100,
+        height: 100,
+        borderRadius: 12,
+    },
+    videoPlaceholder: {
+        width: 100,
+        height: 100,
+        borderRadius: 12,
+        borderWidth: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    removeImageButton: {
+        position: 'absolute',
+        top: -8,
+        right: -8,
+        zIndex: 1,
+    },
+    imagePlaceholder: {
+        width: 100,
+        height: 100,
+        borderRadius: 12,
+        borderWidth: 2,
+        borderStyle: 'dashed',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    locationCard: {
+        padding: 16,
+        borderRadius: 16,
+        borderWidth: 1,
+    },
+    locationHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 8,
+    },
+    locationTitle: {
+        fontSize: 16,
+        fontWeight: '600',
+        marginLeft: 8,
+    },
+    locationText: {
+        fontSize: 14,
+    },
+    refreshLocation: {
+        marginTop: 12,
+        alignSelf: 'flex-end',
+    },
     manualLocationGrid: { flexDirection: 'row', gap: 12, marginTop: 12 },
     manualLocationItem: { flex: 1 },
-    manualInput: { padding: 12, borderRadius: 8, borderWidth: 1, borderColor: '#DDD' },
+    manualInput: { padding: 12, borderRadius: 12, borderWidth: 1 },
     submitButton: { marginTop: 20, padding: 16, borderRadius: 12, alignItems: 'center' },
     submitButtonText: { color: '#FFF', fontWeight: 'bold' },
     fab: { position: 'absolute', bottom: 30, right: 20, padding: 16, borderRadius: 30, flexDirection: 'row', alignItems: 'center', gap: 8, elevation: 5 },

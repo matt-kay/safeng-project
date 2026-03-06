@@ -22,10 +22,24 @@ export class FirebaseService {
     }
 
     if (!admin.apps.length) {
-      this.app = admin.initializeApp({
-        projectId:
-          this.configService.get<string>('FIREBASE_PROJECT_ID') || 'brisk-vtu',
-      });
+      const projectId = this.configService.get<string>('FIREBASE_PROJECT_ID') || 'brisk-vtu';
+      const clientEmail = this.configService.get<string>('FIREBASE_CLIENT_EMAIL');
+      const privateKey = this.configService.get<string>('FIREBASE_PRIVATE_KEY');
+
+      if (clientEmail && privateKey) {
+        this.app = admin.initializeApp({
+          credential: admin.credential.cert({
+            projectId,
+            clientEmail,
+            privateKey: privateKey.replace(/\\n/g, '\n'),
+          }),
+          projectId,
+        });
+      } else {
+        this.app = admin.initializeApp({
+          projectId,
+        });
+      }
     } else {
       this.app = admin.app();
     }

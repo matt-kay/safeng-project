@@ -33,22 +33,30 @@ export class StorageService {
             });
 
             stream.on('finish', async () => {
-                // If using emulator, we might need a different way to get the URL
-                // For production/standard firebase, we make it public or get a signed URL
-                // Given the current setup, we'll use makePublic for simplicity if not on emulator
-                // or generate a permanent download URL format.
-
                 try {
-                    await fileUpload.makePublic();
-                    const publicUrl = `https://storage.googleapis.com/${this.bucket.name}/${fileName}`;
-                    resolve(publicUrl);
-                } catch (error: any) {
-                    this.logger.warn(`Could not make file public, generating signed URL instead: ${error.message}`);
-                    const [url] = await fileUpload.getSignedUrl({
-                        action: 'read',
-                        expires: '03-01-2500', // Far future
-                    });
+                    const storageEmulatorHost = process.env.FIREBASE_STORAGE_EMULATOR_HOST;
+                    let url: string;
+
+                    if (storageEmulatorHost) {
+                        // In emulator mode, construct a direct URL to avoid signing issues
+                        // Format: http://<host>:<port>/v0/b/<bucket>/o/<path>?alt=media
+                        const encodedPath = encodeURIComponent(fileName);
+                        url = `http://${storageEmulatorHost}/v0/b/${this.bucket.name}/o/${encodedPath}?alt=media`;
+                        this.logger.debug(`Generated emulator URL: ${url}`);
+                    } else {
+                        // Use signed URLs for production
+                        const [signedUrl] = await fileUpload.getSignedUrl({
+                            action: 'read',
+                            expires: '03-01-2500', // Far future
+                        });
+                        url = signedUrl;
+                    }
+
+                    this.logger.log(`File uploaded successfully: ${fileName}`);
                     resolve(url);
+                } catch (error: any) {
+                    this.logger.error(`Error finalizing upload or generating URL: ${error.message}`);
+                    reject(error);
                 }
             });
 
