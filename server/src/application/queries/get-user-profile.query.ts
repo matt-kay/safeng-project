@@ -1,8 +1,7 @@
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { IUserRepositoryToken } from '../ports/user.repository.interface';
 import type { IUserRepository } from '../ports/user.repository.interface';
-import { Inject, NotFoundException, ForbiddenException, ServiceUnavailableException } from '@nestjs/common';
-import type { IPortalSettingsRepository } from '../ports/repositories/IPortalSettingsRepository';
+import { Inject, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { UserAccessPolicy } from '../../domain/patterns/user-access.policy';
 import { UserAggregate } from '../../domain/aggregates/user.aggregate';
 
@@ -17,7 +16,6 @@ export class GetUserProfileQuery {
 export class GetUserProfileHandler implements IQueryHandler<GetUserProfileQuery> {
   constructor(
     @Inject(IUserRepositoryToken) private readonly userRepo: IUserRepository,
-    @Inject('IPortalSettingsRepository') private readonly settingsRepo: IPortalSettingsRepository,
   ) { }
 
   async execute(query: GetUserProfileQuery) {
@@ -41,11 +39,6 @@ export class GetUserProfileHandler implements IQueryHandler<GetUserProfileQuery>
         if (targetUser.effective_status !== 'inactive') {
           throw new ForbiddenException('User is suspended or deleted');
         }
-      }
-
-      const settings = await this.settingsRepo.getSettings();
-      if (settings.maintenanceMode && targetUser.profile?.role !== 'admin') {
-        throw new ServiceUnavailableException('System is currently undergoing maintenance. Please try again later.');
       }
 
       if (targetUser.isProfileMissing()) {

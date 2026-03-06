@@ -10,9 +10,6 @@ export default function AdminScreen() {
 
     const menuItems = [
         { id: 'users', label: 'Manage Users', icon: 'people-outline' as const },
-        { id: 'transactions', label: 'All Transactions', icon: 'list-outline' as const },
-        { id: 'integrations', label: 'Integrations', icon: 'git-network-outline' as const },
-        { id: 'settings', label: 'System Settings', icon: 'settings-outline' as const },
     ];
 
     return (
@@ -37,14 +34,8 @@ export default function AdminScreen() {
                             style={[styles.menuItem, { backgroundColor: colors.card }]}
                             onPress={() => {
                                 triggerHaptic();
-                                if (item.id === 'settings') {
-                                    router.push('/admin/settings');
-                                } else if (item.id === 'users') {
+                                if (item.id === 'users') {
                                     router.push('/admin/users');
-                                } else if (item.id === 'transactions') {
-                                    router.push('/admin/all-transactions');
-                                } else if (item.id === 'integrations') {
-                                    router.push('/admin/integrations');
                                 }
                             }}
                         >

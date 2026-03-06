@@ -50,30 +50,10 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="wallet"
-        options={{
-          title: 'Wallet',
-          tabBarIcon: ({ color, focused }) => <TabBarIcon icon={focused ? "wallet" : "wallet-outline"} color={color} label="Wallet" focused={focused} />,
-        }}
-      />
-      <Tabs.Screen
-        name="vtu"
-        options={{
-          title: 'VTU',
-          tabBarIcon: ({ color, focused }) => <TabBarIcon icon={focused ? "apps" : "apps-outline"} color={color} label="VTU" focused={focused} />,
-        }}
-      />
-      <Tabs.Screen
         name="menu"
         options={{
           title: 'Menu',
           tabBarIcon: ({ color, focused }) => <TabBarIcon icon={focused ? "menu" : "menu-outline"} color={color} label="Menu" focused={focused} />,
-        }}
-      />
-      <Tabs.Screen
-        name="two"
-        options={{
-          href: null,
         }}
       />
     </Tabs>

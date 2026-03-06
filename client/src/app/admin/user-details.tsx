@@ -174,53 +174,6 @@ export default function AdminUserDetailsScreen() {
                     </View>
                 </View>
 
-                <View style={styles.linksSection}>
-                    <Text style={[styles.sectionTitle, { color: colors.subtext }]}>Shortcuts</Text>
-                    <View style={[styles.linksContainer, { backgroundColor: colors.card }]}>
-                        <LinkRow
-                            title="Transactions"
-                            icon="swap-horizontal-outline"
-                            onPress={() => {
-                                triggerHaptic();
-                                router.push({
-                                    pathname: '/admin/transaction-list',
-                                    params: { search: user.uid, title: `${user.first_name}'s Transactions` }
-                                });
-                            }}
-                            colors={colors}
-                        />
-                        <View style={[styles.separator, { backgroundColor: colors.border }]} />
-                        <LinkRow
-                            title="Beneficiaries"
-                            icon="people-outline"
-                            onPress={() => {
-                                triggerHaptic();
-                                router.push({ pathname: '/admin/user-beneficiaries', params: { uid: user.uid } });
-                            }}
-                            colors={colors}
-                        />
-                        <View style={[styles.separator, { backgroundColor: colors.border }]} />
-                        <LinkRow
-                            title="Coupons"
-                            icon="pricetag-outline"
-                            onPress={() => {
-                                triggerHaptic();
-                                router.push({ pathname: '/admin/user-coupons', params: { uid: user.uid } });
-                            }}
-                            colors={colors}
-                        />
-                        <View style={[styles.separator, { backgroundColor: colors.border }]} />
-                        <LinkRow
-                            title="Recent Activities"
-                            icon="time-outline"
-                            onPress={() => {
-                                triggerHaptic();
-                                router.push({ pathname: '/admin/user-activities', params: { uid: user.uid } });
-                            }}
-                            colors={colors}
-                        />
-                    </View>
-                </View>
             </ScrollView>
         </SafeAreaView>
     );
