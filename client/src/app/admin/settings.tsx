@@ -171,37 +171,6 @@ export default function AdminSettingsScreen() {
             >
                 <ScrollView contentContainerStyle={styles.content}>
                     <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Financial Config</Text>
-                        <View style={[styles.card, { backgroundColor: colors.card }]}>
-                            <View style={styles.inputGroup}>
-                                <Text style={[styles.label, { color: colors.subtext }]}>Exchange Rate (1 USD = X NGN)</Text>
-                                <TextInput
-                                    style={[styles.input, { color: colors.text, borderColor: colors.border }]}
-                                    value={exchangeRate}
-                                    onChangeText={setExchangeRate}
-                                    keyboardType="numeric"
-                                    placeholder="1500"
-                                    placeholderTextColor={colors.subtext}
-                                />
-                            </View>
-
-                            <View style={[styles.divider, { backgroundColor: colors.border }]} />
-
-                            <View style={styles.inputGroup}>
-                                <Text style={[styles.label, { color: colors.subtext }]}>Top-up Fee (%)</Text>
-                                <TextInput
-                                    style={[styles.input, { color: colors.text, borderColor: colors.border }]}
-                                    value={topUpFee}
-                                    onChangeText={setTopUpFee}
-                                    keyboardType="numeric"
-                                    placeholder="1.5"
-                                    placeholderTextColor={colors.subtext}
-                                />
-                            </View>
-                        </View>
-                    </View>
-
-                    <View style={styles.section}>
                         <Text style={styles.sectionTitle}>System Status</Text>
                         <View style={[styles.card, { backgroundColor: colors.card }]}>
                             <View style={styles.switchRow}>

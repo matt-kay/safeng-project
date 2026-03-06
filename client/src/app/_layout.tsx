@@ -33,7 +33,7 @@ function CustomSplash() {
       <View style={styles.splashContent}>
         <Text style={styles.splashIcon}>⚡</Text>
         <Text style={styles.splashTitle}>SafeMe</Text>
-        <Text style={styles.splashSubtitle}>Fast, Secure & Reliable Top-ups</Text>
+        <Text style={styles.splashSubtitle}>Fast, Secure & Reliable Safety Intelligence</Text>
       </View>
       <Text style={styles.versionText}>v1.0.0</Text>
     </View>
@@ -123,12 +123,6 @@ function RootLayoutContent() {
           <Stack.Screen name="update-profile" options={{ presentation: 'modal', headerShown: false }} />
           <Stack.Screen name="about" options={{ presentation: 'modal', headerShown: false }} />
           <Stack.Screen name="contact" options={{ presentation: 'modal', headerShown: false }} />
-          <Stack.Screen name="beneficiaries" options={{ headerShown: false }} />
-          <Stack.Screen name="transactions" options={{ headerShown: false }} />
-          <Stack.Screen name="transaction-details" options={{ presentation: 'modal', headerShown: false }} />
-          <Stack.Screen name="coupons" options={{ headerShown: false }} />
-          <Stack.Screen name="coupon-details" options={{ presentation: 'modal', headerShown: false }} />
-          <Stack.Screen name="vtu" options={{ headerShown: false }} />
           <Stack.Screen name="admin/index" options={{ headerShown: false }} />
         </Stack>
         <WebConfirmationDialog />

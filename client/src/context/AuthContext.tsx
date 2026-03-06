@@ -3,7 +3,6 @@ import { Alert } from 'react-native';
 import { authService } from '../services/AuthService';
 import { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import { UserService, UserProfile } from '../services/sdk/user-service';
-import { WalletService } from '../services/sdk/wallet-service';
 
 interface AuthContextType {
     user: FirebaseAuthTypes.User | null;
@@ -96,14 +95,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             }
 
             setProfile(updatedProfile);
-
-            // Proactively initiate wallet if profile is complete
-            if (updatedProfile.isProfileComplete) {
-                console.log('[AuthContext] Initiating wallet...');
-                WalletService.initiate().catch(err => {
-                    console.error('[AuthContext] Failed to initiate wallet:', err);
-                });
-            }
         } catch (error) {
             console.error('Error in updateProfile:', error);
             throw error;

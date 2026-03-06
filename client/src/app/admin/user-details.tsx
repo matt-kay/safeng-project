@@ -13,7 +13,6 @@ import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSettings } from '@/context/SettingsContext';
 import { AdminUserService, UserListItem } from '@/services/sdk/admin-user-service';
-import { WalletBalance, PaymentCard } from '@/services/sdk/wallet-service';
 
 export default function AdminUserDetailsScreen() {
     const { colors, triggerHaptic } = useSettings();
@@ -21,8 +20,6 @@ export default function AdminUserDetailsScreen() {
     const { uid } = useLocalSearchParams<{ uid: string }>();
 
     const [user, setUser] = useState<UserListItem | null>(null);
-    const [wallet, setWallet] = useState<WalletBalance | null>(null);
-    const [cards, setCards] = useState<PaymentCard[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -34,14 +31,8 @@ export default function AdminUserDetailsScreen() {
     const fetchUser = async (userUid: string) => {
         setLoading(true);
         try {
-            const [userData, walletData, cardsData] = await Promise.all([
-                AdminUserService.getUser(userUid),
-                AdminUserService.getUserWallet(userUid),
-                AdminUserService.getUserCards(userUid)
-            ]);
+            const userData = await AdminUserService.getUser(userUid);
             setUser(userData);
-            setWallet(walletData);
-            setCards(cardsData);
         } catch (error) {
             console.error('Failed to load user details:', error);
             Alert.alert('Error', 'Failed to load user details');
@@ -110,70 +101,6 @@ export default function AdminUserDetailsScreen() {
                     <InfoRow label="Joined" value={new Date(user.created_at).toLocaleDateString()} icon="calendar-outline" color={colors.text} subColor={colors.subtext} />
                     <InfoRow label="UID" value={user.uid} icon="finger-print-outline" color={colors.text} subColor={colors.subtext} />
                 </View>
-
-                <View style={styles.walletSection}>
-                    <Text style={[styles.sectionTitle, { color: colors.subtext }]}>Wallet Overview</Text>
-                    <View style={[styles.walletCard, { backgroundColor: colors.card }]}>
-                        <View style={styles.balanceContainer}>
-                            <View style={styles.balanceItem}>
-                                <Text style={[styles.balanceLabel, { color: colors.subtext }]}>Main Balance</Text>
-                                <Text style={[styles.balanceValue, { color: colors.text }]}>
-                                    {wallet?.currency || 'NGN'} {wallet?.balance.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                                </Text>
-                            </View>
-                            <View style={[styles.verticalSeparator, { backgroundColor: colors.border }]} />
-                            <View style={styles.balanceItem}>
-                                <Text style={[styles.balanceLabel, { color: colors.subtext }]}>Cashback</Text>
-                                <Text style={[styles.balanceValue, { color: colors.primary }]}>
-                                    {wallet?.currency || 'NGN'} {wallet?.cashbackBalance.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                                </Text>
-                            </View>
-                        </View>
-                    </View>
-                </View>
-
-                <View style={styles.cardsSection}>
-                    <Text style={[styles.sectionTitle, { color: colors.subtext }]}>Saved Cards</Text>
-                    <View style={[styles.cardsContainer, { backgroundColor: colors.card }]}>
-                        {cards.length > 0 ? (
-                            cards.map((card, index) => (
-                                <View key={card.id}>
-                                    <View style={styles.cardItem}>
-                                        <View style={styles.cardInfo}>
-                                            <View style={[styles.cardIconWrap, { backgroundColor: colors.primary + '10' }]}>
-                                                <Ionicons
-                                                    name={card.brand?.toLowerCase().includes('visa') ? 'book' : 'card-outline'}
-                                                    size={20}
-                                                    color={colors.primary}
-                                                />
-                                            </View>
-                                            <View>
-                                                <Text style={[styles.cardTitle, { color: colors.text }]}>
-                                                    {card.brand.toUpperCase()} •••• {card.last4}
-                                                </Text>
-                                                <Text style={[styles.cardExpiry, { color: colors.subtext }]}>
-                                                    Expires {card.expiryMonth.toString().padStart(2, '0')}/{card.expiryYear}
-                                                </Text>
-                                            </View>
-                                        </View>
-                                        {card.isDefault && (
-                                            <View style={[styles.defaultBadge, { backgroundColor: colors.primary + '20' }]}>
-                                                <Text style={[styles.defaultBadgeText, { color: colors.primary }]}>DEFAULT</Text>
-                                            </View>
-                                        )}
-                                    </View>
-                                    {index < cards.length - 1 && <View style={[styles.separator, { backgroundColor: colors.border }]} />}
-                                </View>
-                            ))
-                        ) : (
-                            <View style={styles.emptyCards}>
-                                <Ionicons name="card-outline" size={32} color={colors.subtext + '50'} />
-                                <Text style={[styles.emptyCardsText, { color: colors.subtext }]}>No saved cards found</Text>
-                            </View>
-                        )}
-                    </View>
-                </View>
-
             </ScrollView>
         </SafeAreaView>
     );

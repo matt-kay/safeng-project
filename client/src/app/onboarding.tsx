@@ -9,21 +9,21 @@ import { useSettings } from '@/context/SettingsContext';
 const SLIDES = [
     {
         id: '1',
-        title: 'Fast',
-        description: 'Experience lightning-fast transactions and instant top-ups anytime you need them.',
-        icon: 'flash' as const,
+        title: 'Safe',
+        description: 'Access detailed safety insights and heatmaps to understand the security landscape of any location.',
+        icon: 'shield-half' as const,
     },
     {
         id: '2',
         title: 'Secure',
-        description: 'Your payments and data are protected with industry-leading security measures.',
-        icon: 'shield-checkmark' as const,
+        description: 'Your data and profile are protected with industry-leading security measures.',
+        icon: 'lock-closed' as const,
     },
     {
         id: '3',
         title: 'Reliable',
-        description: 'Enjoy consistent 24/7 service availability. We are always here when you need us.',
-        icon: 'refresh' as const,
+        description: 'Enjoy consistent 24/7 safety intelligence. We are always here when you need us.',
+        icon: 'notifications' as const,
     },
 ];
 
