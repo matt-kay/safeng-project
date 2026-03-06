@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "700171545581",
+    "project_id": "brisk-vtu",
+    "storage_bucket": "brisk-vtu.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:700171545581:android:029c8b69b66c8f5f92d5e4",
+        "android_client_info": {
+          "package_name": "com.solutioncrafts.BriskVTU"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "700171545581-vn07lf4vm7g9fm19o1hjplb69blmpehk.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAOXm4rQOucRCVOd5jyBgumZ3ZDj_WDZ3I"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "700171545581-vn07lf4vm7g9fm19o1hjplb69blmpehk.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "700171545581-dk9bpole9duumgk9bii3mr3c310o39a9.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.solutioncrafts.BriskVTU"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

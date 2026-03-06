@@ -1,22 +1,33 @@
 import { NestFactory } from '@nestjs/core';
-import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
-import { Logger } from 'nestjs-pino';
 import { AppModule } from './app.module';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { Logger } from 'nestjs-pino';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  const app = await NestFactory.create(AppModule, { rawBody: true });
   app.useLogger(app.get(Logger));
+  app.setGlobalPrefix('api/v1');
 
-  const config = new DocumentBuilder()
-    .setTitle('SafeMe API')
-    .setDescription('The SafeMe crowdsourced + predictive safety intelligence platform API')
-    .setVersion('1.0')
-    .addBearerAuth()
-    .build();
+  // Enable CORS
+  app.enableCors({
+    origin: true, // Allow all origins in development, or specify your client URL
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    credentials: true,
+  });
 
-  const documentFactory = () => SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/docs', app, documentFactory);
+  if (process.env.NODE_ENV !== 'production') {
+    const config = new DocumentBuilder()
+      .setTitle('BriskVTU Backend API')
+      .setDescription(
+        'API documentation for the BriskVTU backend services, including wallet, VTU, coupons, and beneficiary management.',
+      )
+      .setVersion('1.0')
+      .addBearerAuth()
+      .build();
+    const documentFactory = () => SwaggerModule.createDocument(app, config);
+    SwaggerModule.setup('api/docs', app, documentFactory);
+  }
 
-  await app.listen(process.env.PORT ?? 3001);
+  await app.listen(process.env.PORT ?? 3000);
 }
 bootstrap();
