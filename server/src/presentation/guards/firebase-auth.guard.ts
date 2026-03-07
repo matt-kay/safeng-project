@@ -8,7 +8,7 @@ import { FirebaseService } from '../../infrastructure/firebase/firebase.service'
 
 @Injectable()
 export class FirebaseAuthGuard implements CanActivate {
-  constructor(private readonly firebaseService: FirebaseService) {}
+  constructor(private readonly firebaseService: FirebaseService) { }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
@@ -26,7 +26,10 @@ export class FirebaseAuthGuard implements CanActivate {
       const decodedToken = await this.firebaseService
         .getAuth()
         .verifyIdToken(idToken);
-      request.user = { uid: decodedToken.uid };
+      request.user = {
+        uid: decodedToken.uid,
+        email: decodedToken.email
+      };
       return true;
     } catch (error) {
       throw new UnauthorizedException('Invalid or expired token');

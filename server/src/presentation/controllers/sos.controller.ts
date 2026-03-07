@@ -3,6 +3,8 @@ import { FirebaseAuthGuard } from '../guards/firebase-auth.guard';
 import { FirestoreProfileRepository } from '../../infrastructure/repositories/firestore-profile.repository';
 import { FirestoreEmergencyContactRepository } from '../../infrastructure/repositories/firestore-emergency-contact.repository';
 import { EmergencyContact } from '../../domain/value-objects/emergency-contact';
+import { PaystackService } from '../../infrastructure/services/paystack.service';
+import { ConfigService } from '@nestjs/config';
 
 @Controller('sos')
 @UseGuards(FirebaseAuthGuard)
@@ -10,7 +12,79 @@ export class SOSController {
     constructor(
         private readonly profileRepo: FirestoreProfileRepository,
         private readonly emergencyContactRepo: FirestoreEmergencyContactRepository,
+        private readonly paystackService: PaystackService,
+        private readonly configService: ConfigService,
     ) { }
+
+    @Get('subscription')
+    async getSOSSubscription(@Request() req: any) {
+        let email = req.user.email;
+        const uid = req.user.uid;
+
+        if (!email) {
+            // Fallback to profile if email is not in token
+            const profile = await this.profileRepo.getProfile(uid);
+            email = profile?.email;
+        }
+
+        if (!email) {
+            throw new BadRequestException('User email not found');
+        }
+
+        const subscriptions = await this.paystackService.getSubscriptions(email);
+        const sosPlanCode = this.configService.get<string>('PAYSTACK_SOS_PLAN_CODE');
+
+        // Find the SOS subscription
+        const sosSub = subscriptions.find(sub => sub.plan.plan_code === sosPlanCode);
+
+        if (!sosSub) {
+            return {
+                status: 'inactive',
+                cardUsed: null,
+                subscribedOn: null,
+                nextChargeDate: null,
+            };
+        }
+
+        return {
+            status: sosSub.status,
+            cardUsed: sosSub.authorization.last4 ? `**** ${sosSub.authorization.last4}` : null,
+            subscribedOn: sosSub.createdAt,
+            nextChargeDate: sosSub.next_payment_date,
+        };
+    }
+
+    @Post('subscription/cancel')
+    async cancelSOSSubscription(@Request() req: any) {
+        let email = req.user.email;
+        const uid = req.user.uid;
+
+        if (!email) {
+            const profile = await this.profileRepo.getProfile(uid);
+            email = profile?.email;
+        }
+
+        if (!email) {
+            throw new BadRequestException('User email not found');
+        }
+
+        const subscriptions = await this.paystackService.getSubscriptions(email);
+        const sosPlanCode = this.configService.get<string>('PAYSTACK_SOS_PLAN_CODE');
+
+        // Find the active SOS subscription
+        const sosSub = subscriptions.find(sub =>
+            sub.plan.plan_code === sosPlanCode &&
+            (sub.status === 'active' || sub.status === 'non-renewing')
+        );
+
+        if (!sosSub) {
+            throw new BadRequestException('No active SOS subscription found');
+        }
+
+        await this.paystackService.disableSubscription(sosSub.subscription_code, sosSub.email_token);
+
+        return { success: true, message: 'Subscription cancelled successfully' };
+    }
 
     @Get('status')
     async getSOSStatus(@Request() req: any) {

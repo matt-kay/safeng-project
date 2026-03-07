@@ -60,4 +60,31 @@ export class PaystackService {
             throw error;
         }
     }
+
+    async getSubscriptions(customerEmail: string): Promise<any[]> {
+        try {
+            // First, try to get the customer to get their internal Paystack ID/Code
+            const customerResponse = await axios.get(`${this.baseUrl}/customer/${customerEmail}`, {
+                headers: this.headers,
+            });
+
+            const customerData = customerResponse.data.data;
+            if (!customerData) return [];
+
+            const customerId = customerData.id;
+
+            const response = await axios.get(`${this.baseUrl}/subscription`, {
+                params: { customer: customerId },
+                headers: this.headers,
+            });
+            return response.data.data;
+        } catch (error) {
+            // If customer not found, they likely have no subscriptions
+            if (error.response?.status === 404) {
+                return [];
+            }
+            this.logger.error(`Error fetching subscriptions for ${customerEmail}: ${error.message}`);
+            throw error;
+        }
+    }
 }

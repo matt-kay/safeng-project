@@ -3,16 +3,24 @@ import { StyleSheet, View, Text, SafeAreaView, ScrollView, TouchableOpacity, Act
 import { Stack, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSettings } from '@/context/SettingsContext';
+import { useConfirmation } from '@/context/ConfirmationContext';
 import { UserService, EmergencyContact } from '@/services/sdk/user-service';
 
 export default function SOSManagementScreen() {
     const { colors, resolvedTheme, triggerHaptic } = useSettings();
+    const { confirm } = useConfirmation();
     const router = useRouter();
     const isDark = resolvedTheme === 'dark';
 
     const [loading, setLoading] = useState(true);
     const [contacts, setContacts] = useState<EmergencyContact[]>([]);
     const [isSubscribed, setIsSubscribed] = useState(false);
+    const [subscriptionDetails, setSubscriptionDetails] = useState<{
+        status: string;
+        cardUsed: string | null;
+        subscribedOn: string | null;
+        nextChargeDate: string | null;
+    } | null>(null);
 
     useEffect(() => {
         fetchStatus();
@@ -21,14 +29,55 @@ export default function SOSManagementScreen() {
     const fetchStatus = async () => {
         setLoading(true);
         try {
-            const data = await UserService.getSOSStatus();
-            setContacts(data.contacts || []);
-            setIsSubscribed(data.subscribed || false);
+            const [statusData, subData] = await Promise.all([
+                UserService.getSOSStatus(),
+                UserService.getSOSSubscriptionDetails()
+            ]);
+            setContacts(statusData.contacts || []);
+            setIsSubscribed(statusData.subscribed || false);
+            setSubscriptionDetails(subData);
         } catch (error) {
-            console.error('Error fetching SOS status:', error);
+            console.error('Error fetching SOS status or subscription:', error);
         } finally {
             setLoading(false);
         }
+    };
+
+    const formatDate = (dateString: string | null) => {
+        if (!dateString) return 'N/A';
+        try {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+        } catch (e) {
+            return 'N/A';
+        }
+    };
+
+    const handleCancelSubscription = () => {
+        confirm({
+            title: 'Cancel Subscription',
+            message: 'Are you sure you want to cancel your SOS Emergency Alert subscription? You will lose protection once the current period ends.',
+            confirmText: 'Yes, Cancel',
+            cancelText: 'Keep Protection',
+            isDestructive: true,
+            onConfirm: async () => {
+                setLoading(true);
+                try {
+                    await UserService.cancelSOSSubscription();
+                    Alert.alert('Success', 'Your subscription has been cancelled and will not renew.');
+                    fetchStatus(); // Refresh data
+                } catch (error: any) {
+                    const message = error.response?.data?.message || error.message;
+                    Alert.alert('Error', `Failed to cancel subscription: ${message}`);
+                } finally {
+                    setLoading(false);
+                }
+            }
+        });
     };
 
     if (loading) {
@@ -126,16 +175,48 @@ export default function SOSManagementScreen() {
                         </View>
                         <View style={styles.subInfo}>
                             <Text style={[styles.subLabel, { color: colors.subtext }]}>Status</Text>
-                            <Text style={[styles.subValue, { color: isSubscribed ? colors.success : colors.error }]}>
-                                {isSubscribed ? 'Active' : 'Inactive'}
+                            <Text style={[styles.subValue, {
+                                color: subscriptionDetails?.status === 'active' ? colors.success :
+                                    subscriptionDetails?.status === 'inactive' ? colors.error : colors.warning,
+                                textTransform: 'capitalize'
+                            }]}>
+                                {subscriptionDetails?.status || (isSubscribed ? 'Active' : 'Inactive')}
                             </Text>
                         </View>
-                        <TouchableOpacity
-                            style={[styles.manageButton, { borderColor: colors.primary }]}
-                            onPress={() => {/* Open Paystack Portal? */ }}
-                        >
-                            <Text style={[styles.manageButtonText, { color: colors.primary }]}>Manage Subscription</Text>
-                        </TouchableOpacity>
+                        <View style={styles.subInfo}>
+                            <Text style={[styles.subLabel, { color: colors.subtext }]}>Card Used</Text>
+                            <Text style={[styles.subValue, { color: colors.text }]}>
+                                {subscriptionDetails?.cardUsed || 'N/A'}
+                            </Text>
+                        </View>
+                        <View style={styles.subInfo}>
+                            <Text style={[styles.subLabel, { color: colors.subtext }]}>Subscribed On</Text>
+                            <Text style={[styles.subValue, { color: colors.text }]}>
+                                {formatDate(subscriptionDetails?.subscribedOn || null)}
+                            </Text>
+                        </View>
+                        <View style={styles.subInfo}>
+                            <Text style={[styles.subLabel, { color: colors.subtext }]}>Next Charge Date</Text>
+                            <Text style={[styles.subValue, { color: colors.text }]}>
+                                {formatDate(subscriptionDetails?.nextChargeDate || null)}
+                            </Text>
+                        </View>
+                        {subscriptionDetails?.status === 'active' && (
+                            <TouchableOpacity
+                                style={[styles.manageButton, { borderColor: colors.error }]}
+                                onPress={handleCancelSubscription}
+                            >
+                                <Text style={[styles.manageButtonText, { color: colors.error }]}>Cancel Subscription</Text>
+                            </TouchableOpacity>
+                        )}
+                        {!subscriptionDetails && isSubscribed && (
+                            <TouchableOpacity
+                                style={[styles.manageButton, { borderColor: colors.error }]}
+                                onPress={handleCancelSubscription}
+                            >
+                                <Text style={[styles.manageButtonText, { color: colors.error }]}>Cancel Subscription</Text>
+                            </TouchableOpacity>
+                        )}
                     </View>
                 </View>
             </ScrollView>

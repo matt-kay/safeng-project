@@ -3,30 +3,41 @@ import {
     StyleSheet,
     View,
     Text,
-    SafeAreaView,
     ScrollView,
     TouchableOpacity,
-    Image,
     ActivityIndicator,
     Alert,
     Dimensions,
+    StatusBar,
+    Platform,
 } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSettings } from '@/context/SettingsContext';
 import { ReportService, ReportListItem, ReportType } from '@/services/sdk/report-service';
 import AlertModal from '@/components/AlertModal';
+import { Image } from 'expo-image';
+import { BlurView } from 'expo-blur';
+import ImageViewer from '@/components/ImageViewer';
+import { useVideoPlayer, VideoView } from 'expo-video';
+import { LinearGradient } from 'expo-linear-gradient';
+import Animated, {
+    FadeInDown,
+    FadeInRight,
+} from 'react-native-reanimated';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 export default function ReportDetailsScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
-    const { colors, triggerHaptic } = useSettings();
+    const { colors, triggerHaptic, resolvedTheme } = useSettings();
     const router = useRouter();
 
     const [report, setReport] = useState<ReportListItem | null>(null);
     const [loading, setLoading] = useState(true);
     const [deleting, setDeleting] = useState(false);
+    const [isImageViewerVisible, setImageViewerVisible] = useState(false);
+    const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [alert, setAlert] = useState<{ visible: boolean; title: string; message: string; type: 'success' | 'error' | 'info' }>({
         visible: false,
         title: '',
@@ -92,7 +103,6 @@ export default function ReportDetailsScreen() {
 
     const handleEdit = () => {
         triggerHaptic();
-        // We will pass the report data back to the report-crime screen for editing
         router.push({
             pathname: '/(tabs)/report-crime',
             params: { editId: id }
@@ -109,98 +119,223 @@ export default function ReportDetailsScreen() {
         }
     };
 
+    const mediaList = report?.media || [];
+    const images = mediaList.filter(url =>
+        url.toLowerCase().endsWith('.jpg') ||
+        url.toLowerCase().endsWith('.jpeg') ||
+        url.toLowerCase().endsWith('.png') ||
+        url.includes('image')
+    );
+    const videos = mediaList.filter(url =>
+        url.toLowerCase().endsWith('.mp4') ||
+        url.toLowerCase().endsWith('.mov') ||
+        url.includes('video')
+    );
+
+    const formattedImages = images.map(url => ({ uri: url }));
+
     if (loading) {
         return (
-            <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+            <View style={[styles.container, { backgroundColor: colors.background }]}>
                 <View style={styles.centered}>
                     <ActivityIndicator size="large" color={colors.primary} />
                 </View>
-            </SafeAreaView>
+            </View>
         );
     }
 
     if (!report) {
         return (
-            <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+            <View style={[styles.container, { backgroundColor: colors.background }]}>
                 <View style={styles.centered}>
                     <Text style={{ color: colors.text }}>Report not found</Text>
                 </View>
-            </SafeAreaView>
+            </View>
         );
     }
 
+    const firstImage = images.length > 0 ? images[0] : null;
+
     return (
-        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-            <Stack.Screen
-                options={{
-                    headerShown: true,
-                    title: 'Report Details',
-                    headerRight: () => (
+        <View style={[styles.container, { backgroundColor: colors.background }]}>
+            <StatusBar barStyle="light-content" translucent />
+            <Stack.Screen options={{ headerShown: false }} />
+
+            {/* Floating Header */}
+            <View style={styles.floatingHeader}>
+                <BlurView intensity={Platform.OS === 'ios' ? 20 : 80} tint="dark" style={styles.headerBlur}>
+                    <View style={styles.headerContent}>
+                        <TouchableOpacity
+                            onPress={() => router.back()}
+                            style={styles.headerIconBtn}
+                        >
+                            <Ionicons name="chevron-back" size={24} color="#fff" />
+                        </TouchableOpacity>
+
+                        <Animated.Text entering={FadeInDown.delay(100)} style={styles.headerTitle}>
+                            CASE #{id.slice(-5).toUpperCase()}
+                        </Animated.Text>
+
                         <View style={styles.headerActions}>
-                            <TouchableOpacity onPress={handleEdit} style={styles.headerAction}>
-                                <Ionicons name="create-outline" size={24} color={colors.primary} />
+                            <TouchableOpacity onPress={handleEdit} style={styles.headerIconBtn}>
+                                <Ionicons name="create-outline" size={20} color="#fff" />
                             </TouchableOpacity>
-                            <TouchableOpacity onPress={handleDelete} style={styles.headerAction}>
-                                <Ionicons name="trash-outline" size={24} color={colors.error} />
+                            <TouchableOpacity onPress={handleDelete} style={styles.headerIconBtn}>
+                                <Ionicons name="trash-outline" size={20} color="#EF4444" />
                             </TouchableOpacity>
                         </View>
-                    ),
-                }}
-            />
-            <ScrollView contentContainerStyle={styles.scrollContent}>
-                <View style={[styles.statusSection, { backgroundColor: getStatusColor(report.status) + '15' }]}>
-                    <Text style={[styles.statusLabel, { color: getStatusColor(report.status) }]}>
-                        Status: {report.status.toUpperCase()}
-                    </Text>
-                </View>
-
-                <View style={styles.section}>
-                    <Text style={[styles.label, { color: colors.subtext }]}>TYPE</Text>
-                    <Text style={[styles.value, { color: colors.text }]}>
-                        {report.type === ReportType.OTHER ? report.otherTitle : report.type}
-                    </Text>
-                </View>
-
-                <View style={styles.section}>
-                    <Text style={[styles.label, { color: colors.subtext }]}>DESCRIPTION</Text>
-                    <Text style={[styles.description, { color: colors.text }]}>{report.description}</Text>
-                </View>
-
-                <View style={styles.section}>
-                    <Text style={[styles.label, { color: colors.subtext }]}>LOCATION</Text>
-                    <View style={styles.locationContainer}>
-                        <Ionicons name="location-outline" size={20} color={colors.primary} />
-                        <Text style={[styles.value, { color: colors.text, marginLeft: 8 }]}>
-                            {report.location.street}, {report.location.lga}, {report.location.state}
-                        </Text>
                     </View>
-                    {report.location.landmark && (
-                        <Text style={[styles.subValue, { color: colors.subtext }]}>
-                            Landmark: {report.location.landmark}
-                        </Text>
+                </BlurView>
+            </View>
+
+            <ScrollView bounces={false} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+                {/* Visual Hero */}
+                <View style={styles.heroWrapper}>
+                    {firstImage ? (
+                        <Image
+                            source={{ uri: firstImage }}
+                            style={styles.heroImage}
+                            contentFit="cover"
+                        />
+                    ) : (
+                        <View style={[styles.heroPlaceholder, { backgroundColor: colors.primary + '20' }]}>
+                            <Ionicons name="shield-checkmark" size={80} color={colors.primary} />
+                        </View>
                     )}
+                    <LinearGradient
+                        colors={['rgba(0,0,0,0.6)', 'transparent', colors.background]}
+                        locations={[0, 0.4, 1]}
+                        style={styles.heroGradient}
+                    />
+
+                    <Animated.View entering={FadeInRight.delay(300)} style={styles.heroTitleContainer}>
+                        <View style={[styles.premiumStatusBadge, { backgroundColor: getStatusColor(report.status) }]}>
+                            <View style={styles.badgeDot} />
+                            <Text style={styles.statusText}>{report.status.toUpperCase()}</Text>
+                        </View>
+                        <Text style={styles.heroMainTitle}>
+                            {report.type === ReportType.OTHER ? report.otherTitle : report.type}
+                        </Text>
+                        <View style={styles.heroMeta}>
+                            <Ionicons name="calendar-clear-outline" size={14} color="rgba(255,255,255,0.7)" />
+                            <Text style={styles.heroMetaText}>
+                                {new Date(report.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                            </Text>
+                            <View style={styles.metaDivider} />
+                            <Ionicons name="time-outline" size={14} color="rgba(255,255,255,0.7)" />
+                            <Text style={styles.heroMetaText}>
+                                {new Date(report.createdAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+                            </Text>
+                        </View>
+                    </Animated.View>
                 </View>
 
-                {report.media && report.media.length > 0 && (
-                    <View style={styles.section}>
-                        <Text style={[styles.label, { color: colors.subtext }]}>MEDIA</Text>
-                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.mediaScroll}>
-                            {report.media.map((url, index) => (
-                                <View key={index} style={styles.mediaWrapper}>
-                                    <Image source={{ uri: url }} style={styles.mediaImage} />
-                                </View>
-                            ))}
-                        </ScrollView>
-                    </View>
-                )}
+                {/* Overlapping Content */}
+                <View style={styles.mainContent}>
+                    {/* Description Card */}
+                    <Animated.View
+                        entering={FadeInDown.delay(400)}
+                        style={[styles.premiumCard, { backgroundColor: colors.card }]}
+                    >
+                        <View style={styles.cardHeader}>
+                            <View style={[styles.cardIconBox, { backgroundColor: colors.primary + '10' }]}>
+                                <Ionicons name="document-text" size={20} color={colors.primary} />
+                            </View>
+                            <Text style={[styles.cardTitle, { color: colors.text }]}>Incident Description</Text>
+                        </View>
+                        <Text style={[styles.descriptionText, { color: colors.text }]}>
+                            {report.description}
+                        </Text>
+                    </Animated.View>
 
-                <View style={styles.section}>
-                    <Text style={[styles.label, { color: colors.subtext }]}>REPORTED ON</Text>
-                    <Text style={[styles.value, { color: colors.text }]}>
-                        {new Date(report.createdAt).toLocaleString()}
-                    </Text>
+                    {/* Location Card */}
+                    <Animated.View
+                        entering={FadeInDown.delay(500)}
+                        style={[styles.premiumCard, { backgroundColor: colors.card }]}
+                    >
+                        <View style={styles.cardHeader}>
+                            <View style={[styles.cardIconBox, { backgroundColor: '#3B82F620' }]}>
+                                <Ionicons name="location" size={20} color="#3B82F6" />
+                            </View>
+                            <Text style={[styles.cardTitle, { color: colors.text }]}>Location Details</Text>
+                        </View>
+
+                        <View style={styles.locationWrapper}>
+                            <Text style={[styles.addressText, { color: colors.text }]}>
+                                {report.location.street}
+                            </Text>
+                            <Text style={[styles.addressSubText, { color: colors.subtext }]}>
+                                {report.location.lga}, {report.location.state}
+                            </Text>
+
+                            {report.location.landmark && (
+                                <View style={[styles.landmarkBox, { backgroundColor: colors.background }]}>
+                                    <Ionicons name="flag" size={14} color={colors.primary} />
+                                    <Text style={[styles.landmarkLabel, { color: colors.subtext }]}>Near:</Text>
+                                    <Text style={[styles.landmarkValue, { color: colors.text }]}>{report.location.landmark}</Text>
+                                </View>
+                            )}
+                        </View>
+                    </Animated.View>
+
+                    {/* Evidence Gallery */}
+                    {mediaList.length > 0 && (
+                        <Animated.View
+                            entering={FadeInDown.delay(600)}
+                            style={styles.evidenceContainer}
+                        >
+                            <Text style={[styles.sectionHeading, { color: colors.text }]}>Gallery & Evidence</Text>
+
+                            {/* Images Carousel-like scroll */}
+                            {images.length > 0 && (
+                                <ScrollView
+                                    horizontal
+                                    showsHorizontalScrollIndicator={false}
+                                    snapToInterval={SCREEN_WIDTH * 0.75 + 16}
+                                    decelerationRate="fast"
+                                    style={styles.evidenceScroll}
+                                    contentContainerStyle={styles.evidenceScrollContent}
+                                >
+                                    {images.map((url, index) => (
+                                        <TouchableOpacity
+                                            key={url}
+                                            activeOpacity={0.9}
+                                            onPress={() => {
+                                                setCurrentImageIndex(index);
+                                                setImageViewerVisible(true);
+                                            }}
+                                            style={[styles.galleryItem, { backgroundColor: colors.card }]}
+                                        >
+                                            <Image source={{ uri: url }} style={styles.galleryImage} contentFit="cover" />
+                                            <BlurView intensity={30} tint="dark" style={styles.zoomOverlay}>
+                                                <Ionicons name="expand" size={18} color="#fff" />
+                                            </BlurView>
+                                        </TouchableOpacity>
+                                    ))}
+                                </ScrollView>
+                            )}
+
+                            {/* Videos Vertical Stack */}
+                            {videos.length > 0 && (
+                                <View style={styles.videosWrapper}>
+                                    {videos.map((url) => (
+                                        <PremiumVideoItem key={url} url={url} colors={colors} />
+                                    ))}
+                                </View>
+                            )}
+                        </Animated.View>
+                    )}
+
+                    <View style={{ height: 100 }} />
                 </View>
             </ScrollView>
+
+            <ImageViewer
+                images={formattedImages}
+                imageIndex={currentImageIndex}
+                visible={isImageViewerVisible}
+                onRequestClose={() => setImageViewerVisible(false)}
+            />
 
             <AlertModal
                 isVisible={alert.visible}
@@ -209,7 +344,30 @@ export default function ReportDetailsScreen() {
                 type={alert.type}
                 onDismiss={() => setAlert({ ...alert, visible: false })}
             />
-        </SafeAreaView>
+        </View>
+    );
+}
+
+function PremiumVideoItem({ url, colors }: { url: string, colors: any }) {
+    const player = useVideoPlayer(url, (player) => {
+        player.loop = false;
+    });
+
+    return (
+        <View style={[styles.premiumVideoCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <VideoView
+                player={player}
+                style={styles.premiumVideoPlayer}
+                allowsPictureInPicture
+            />
+            <View style={styles.videoMetaFooter}>
+                <View style={styles.videoMetaLeft}>
+                    <View style={styles.playPulse} />
+                    <Text style={[styles.videoTypeTag, { color: colors.text }]}>VIDEO EVIDENCE</Text>
+                </View>
+                <Ionicons name="radio-outline" size={16} color={colors.error} />
+            </View>
+        </View>
     );
 }
 
@@ -222,62 +380,277 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
     },
-    scrollContent: {
-        padding: 20,
+    floatingHeader: {
+        position: 'absolute',
+        top: Platform.OS === 'ios' ? 50 : 30,
+        left: 20,
+        right: 20,
+        zIndex: 100,
+    },
+    headerBlur: {
+        borderRadius: 24,
+        overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.1)',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 10,
+    },
+    headerContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 8,
+        paddingVertical: 8,
+    },
+    headerIconBtn: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(255,255,255,0.1)',
+    },
+    headerTitle: {
+        color: '#fff',
+        fontSize: 10,
+        fontWeight: '800',
+        letterSpacing: 2,
     },
     headerActions: {
         flexDirection: 'row',
+        gap: 8,
+    },
+    scrollContent: {
+        flexGrow: 1,
+    },
+    heroWrapper: {
+        height: SCREEN_HEIGHT * 0.45,
+        width: SCREEN_WIDTH,
+        position: 'relative',
+    },
+    heroImage: {
+        width: '100%',
+        height: '100%',
+    },
+    heroPlaceholder: {
+        width: '100%',
+        height: '100%',
+        justifyContent: 'center',
         alignItems: 'center',
     },
-    headerAction: {
-        marginLeft: 16,
-        padding: 4,
+    heroGradient: {
+        ...StyleSheet.absoluteFillObject,
     },
-    statusSection: {
-        padding: 12,
-        borderRadius: 12,
-        marginBottom: 24,
-        alignItems: 'center',
+    heroTitleContainer: {
+        position: 'absolute',
+        bottom: 60,
+        left: 24,
+        right: 24,
     },
-    statusLabel: {
-        fontSize: 14,
-        fontWeight: 'bold',
-    },
-    section: {
-        marginBottom: 24,
-    },
-    label: {
-        fontSize: 12,
-        fontWeight: '700',
-        marginBottom: 8,
-        letterSpacing: 1,
-    },
-    value: {
-        fontSize: 18,
-        fontWeight: '600',
-    },
-    subValue: {
-        fontSize: 14,
-        marginTop: 4,
-        marginLeft: 28,
-    },
-    description: {
-        fontSize: 16,
-        lineHeight: 24,
-    },
-    locationContainer: {
+    premiumStatusBadge: {
         flexDirection: 'row',
         alignItems: 'center',
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 12,
+        marginBottom: 12,
+        alignSelf: 'flex-start',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.2)',
     },
-    mediaScroll: {
-        marginTop: 8,
+    badgeDot: {
+        width: 6,
+        height: 6,
+        borderRadius: 3,
+        backgroundColor: '#fff',
+        marginHorizontal: 4,
     },
-    mediaWrapper: {
+    statusText: {
+        color: '#fff',
+        fontSize: 10,
+        fontWeight: '900',
+        letterSpacing: 1,
+        marginRight: 4,
+    },
+    heroMainTitle: {
+        color: '#fff',
+        fontSize: 34,
+        fontWeight: '900',
+        lineHeight: 38,
+        marginBottom: 12,
+    },
+    heroMeta: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+    },
+    heroMetaText: {
+        color: 'rgba(255,255,255,0.8)',
+        fontSize: 13,
+        fontWeight: '500',
+    },
+    metaDivider: {
+        width: 4,
+        height: 4,
+        borderRadius: 2,
+        backgroundColor: 'rgba(255,255,255,0.3)',
+        marginHorizontal: 4,
+    },
+    mainContent: {
+        paddingHorizontal: 20,
+        marginTop: -40,
+        borderTopLeftRadius: 32,
+        borderTopRightRadius: 32,
+    },
+    premiumCard: {
+        borderRadius: 28,
+        padding: 24,
+        marginBottom: 16,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.1,
+        shadowRadius: 20,
+        elevation: 5,
+    },
+    cardHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 16,
+    },
+    cardIconBox: {
+        width: 36,
+        height: 36,
+        borderRadius: 12,
+        justifyContent: 'center',
+        alignItems: 'center',
         marginRight: 12,
     },
-    mediaImage: {
-        width: SCREEN_WIDTH * 0.7,
-        height: 200,
+    cardTitle: {
+        fontSize: 12,
+        fontWeight: '800',
+        textTransform: 'uppercase',
+        letterSpacing: 1,
+    },
+    descriptionText: {
+        fontSize: 16,
+        lineHeight: 26,
+        fontWeight: '400',
+        opacity: 0.9,
+    },
+    locationWrapper: {
+        gap: 4,
+    },
+    addressText: {
+        fontSize: 20,
+        fontWeight: '700',
+    },
+    addressSubText: {
+        fontSize: 14,
+        fontWeight: '500',
+        marginBottom: 12,
+    },
+    landmarkBox: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 12,
+        paddingVertical: 8,
         borderRadius: 16,
+        gap: 6,
+    },
+    landmarkLabel: {
+        fontSize: 12,
+        fontWeight: '600',
+    },
+    landmarkValue: {
+        fontSize: 12,
+        fontWeight: '700',
+    },
+    sectionHeading: {
+        fontSize: 18,
+        fontWeight: '800',
+        marginTop: 10,
+        marginBottom: 16,
+        marginLeft: 4,
+    },
+    evidenceContainer: {
+        marginTop: 8,
+    },
+    evidenceScroll: {
+        marginLeft: -20,
+        width: SCREEN_WIDTH,
+    },
+    evidenceScrollContent: {
+        paddingLeft: 20,
+        paddingRight: 40,
+        gap: 16,
+    },
+    galleryItem: {
+        width: SCREEN_WIDTH * 0.75,
+        height: 220,
+        borderRadius: 24,
+        overflow: 'hidden',
+        position: 'relative',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 10,
+        elevation: 3,
+    },
+    galleryImage: {
+        width: '100%',
+        height: '100%',
+    },
+    zoomOverlay: {
+        position: 'absolute',
+        top: 16,
+        right: 16,
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        justifyContent: 'center',
+        alignItems: 'center',
+        overflow: 'hidden',
+    },
+    videosWrapper: {
+        marginTop: 24,
+        gap: 20,
+    },
+    premiumVideoCard: {
+        borderRadius: 28,
+        overflow: 'hidden',
+        borderWidth: 1,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.1,
+        shadowRadius: 15,
+        elevation: 4,
+    },
+    premiumVideoPlayer: {
+        width: '100%',
+        aspectRatio: 16 / 9,
+    },
+    videoMetaFooter: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: 16,
+    },
+    videoMetaLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
+    playPulse: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+        backgroundColor: '#3B82F6',
+    },
+    videoTypeTag: {
+        fontSize: 11,
+        fontWeight: '900',
+        letterSpacing: 1,
     },
 });

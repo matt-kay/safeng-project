@@ -94,4 +94,18 @@ export class UserService {
         const { data } = await apiClient.get<any>('/sos/status');
         return data;
     }
+
+    static async getSOSSubscriptionDetails(): Promise<{
+        status: string;
+        cardUsed: string | null;
+        subscribedOn: string | null;
+        nextChargeDate: string | null;
+    }> {
+        const { data } = await apiClient.get<any>('/sos/subscription');
+        return data;
+    }
+
+    static async cancelSOSSubscription(): Promise<void> {
+        await apiClient.post('/sos/subscription/cancel');
+    }
 }
