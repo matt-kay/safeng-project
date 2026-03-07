@@ -340,7 +340,11 @@ export default function ReportCrimeScreen() {
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
             <View style={styles.header}>
+                <View style={{ width: 28 }} />
                 <Text style={[styles.headerTitle, { color: colors.text }]}>Report History</Text>
+                <TouchableOpacity onPress={handleRefresh} disabled={refreshing}>
+                    <Ionicons name="refresh" size={24} color={colors.primary} style={{ opacity: refreshing ? 0.5 : 1 }} />
+                </TouchableOpacity>
             </View>
 
             {loadingReports && page === 1 ? (
@@ -581,7 +585,15 @@ export default function ReportCrimeScreen() {
 
 const styles = StyleSheet.create({
     container: { flex: 1 },
-    header: { padding: 20, alignItems: 'center', borderBottomWidth: 1, borderBottomColor: 'rgba(0,0,0,0.05)' },
+    header: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+        paddingVertical: 15,
+        borderBottomWidth: 1,
+        borderBottomColor: 'rgba(0,0,0,0.05)'
+    },
     headerTitle: { fontSize: 20, fontWeight: 'bold' },
     centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     listContent: { padding: 20 },
