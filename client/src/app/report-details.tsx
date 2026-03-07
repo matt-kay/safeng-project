@@ -55,6 +55,11 @@ export default function ReportDetailsScreen() {
         try {
             setLoading(true);
             const data = await ReportService.getReport(id);
+            // console.log(`[ReportDetails] Fetched report ${id}:`, {
+            //     hasMedia: !!data.media,
+            //     mediaCount: data.media?.length,
+            //     media: data.media
+            // });
             setReport(data);
         } catch (error) {
             console.error('Error fetching report:', error);
@@ -120,17 +125,31 @@ export default function ReportDetailsScreen() {
     };
 
     const mediaList = report?.media || [];
-    const images = mediaList.filter(url =>
-        url.toLowerCase().endsWith('.jpg') ||
-        url.toLowerCase().endsWith('.jpeg') ||
-        url.toLowerCase().endsWith('.png') ||
-        url.includes('image')
-    );
-    const videos = mediaList.filter(url =>
-        url.toLowerCase().endsWith('.mp4') ||
-        url.toLowerCase().endsWith('.mov') ||
-        url.includes('video')
-    );
+
+    const isVideo = (url: string) => {
+        if (!url || typeof url !== 'string') return false;
+        const lowerUrl = url.toLowerCase().split('?')[0];
+        return lowerUrl.endsWith('.mp4') ||
+            lowerUrl.endsWith('.mov') ||
+            lowerUrl.endsWith('.m4v') ||
+            url.includes('video');
+    };
+
+    const isImage = (url: string) => {
+        if (!url || typeof url !== 'string') return false;
+        const lowerUrl = url.toLowerCase().split('?')[0];
+        const hasImageExt = lowerUrl.endsWith('.jpg') ||
+            lowerUrl.endsWith('.jpeg') ||
+            lowerUrl.endsWith('.png') ||
+            lowerUrl.endsWith('.webp') ||
+            url.includes('image');
+
+        // If it's not explicitly a video, and we have nothing else, treat it as an image
+        return hasImageExt || !isVideo(url);
+    };
+
+    const images = mediaList.filter(isImage);
+    const videos = mediaList.filter(isVideo);
 
     const formattedImages = images.map(url => ({ uri: url }));
 
@@ -217,12 +236,12 @@ export default function ReportDetailsScreen() {
                             {report.type === ReportType.OTHER ? report.otherTitle : report.type}
                         </Text>
                         <View style={styles.heroMeta}>
-                            <Ionicons name="calendar-clear-outline" size={14} color="rgba(255,255,255,0.7)" />
+                            <Ionicons name="calendar-clear-outline" size={14} color="#131212" />
                             <Text style={styles.heroMetaText}>
                                 {new Date(report.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
                             </Text>
                             <View style={styles.metaDivider} />
-                            <Ionicons name="time-outline" size={14} color="rgba(255,255,255,0.7)" />
+                            <Ionicons name="time-outline" size={14} color="#131212" />
                             <Text style={styles.heroMetaText}>
                                 {new Date(report.createdAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
                             </Text>
@@ -282,37 +301,49 @@ export default function ReportDetailsScreen() {
                     {mediaList.length > 0 && (
                         <Animated.View
                             entering={FadeInDown.delay(600)}
-                            style={styles.evidenceContainer}
+                            style={[styles.premiumCard, { backgroundColor: colors.card, paddingBottom: 8 }]}
                         >
-                            <Text style={[styles.sectionHeading, { color: colors.text }]}>Gallery & Evidence</Text>
+                            <View style={styles.cardHeader}>
+                                <View style={[styles.cardIconBox, { backgroundColor: colors.primary + '10' }]}>
+                                    <Ionicons name="images" size={20} color={colors.primary} />
+                                </View>
+                                <Text style={[styles.cardTitle, { color: colors.text }]}>Gallery & Evidence</Text>
+                                {mediaList.length > 0 && (
+                                    <View style={styles.debugBadge}>
+                                        <Text style={styles.debugBadgeText}>{mediaList.length} ITEMS</Text>
+                                    </View>
+                                )}
+                            </View>
 
                             {/* Images Carousel-like scroll */}
                             {images.length > 0 && (
-                                <ScrollView
-                                    horizontal
-                                    showsHorizontalScrollIndicator={false}
-                                    snapToInterval={SCREEN_WIDTH * 0.75 + 16}
-                                    decelerationRate="fast"
-                                    style={styles.evidenceScroll}
-                                    contentContainerStyle={styles.evidenceScrollContent}
-                                >
-                                    {images.map((url, index) => (
-                                        <TouchableOpacity
-                                            key={url}
-                                            activeOpacity={0.9}
-                                            onPress={() => {
-                                                setCurrentImageIndex(index);
-                                                setImageViewerVisible(true);
-                                            }}
-                                            style={[styles.galleryItem, { backgroundColor: colors.card }]}
-                                        >
-                                            <Image source={{ uri: url }} style={styles.galleryImage} contentFit="cover" />
-                                            <BlurView intensity={30} tint="dark" style={styles.zoomOverlay}>
-                                                <Ionicons name="expand" size={18} color="#fff" />
-                                            </BlurView>
-                                        </TouchableOpacity>
-                                    ))}
-                                </ScrollView>
+                                <View style={styles.galleryWrapper}>
+                                    <ScrollView
+                                        horizontal
+                                        showsHorizontalScrollIndicator={false}
+                                        snapToInterval={SCREEN_WIDTH * 0.7 + 12}
+                                        decelerationRate="fast"
+                                        style={styles.evidenceScroll}
+                                        contentContainerStyle={styles.evidenceScrollContent}
+                                    >
+                                        {images.map((url, index) => (
+                                            <TouchableOpacity
+                                                key={url}
+                                                activeOpacity={0.9}
+                                                onPress={() => {
+                                                    setCurrentImageIndex(index);
+                                                    setImageViewerVisible(true);
+                                                }}
+                                                style={[styles.galleryItem, { backgroundColor: colors.background }]}
+                                            >
+                                                <Image source={{ uri: url }} style={styles.galleryImage} contentFit="cover" />
+                                                <BlurView intensity={30} tint="dark" style={styles.zoomOverlay}>
+                                                    <Ionicons name="expand" size={18} color="#fff" />
+                                                </BlurView>
+                                            </TouchableOpacity>
+                                        ))}
+                                    </ScrollView>
+                                </View>
                             )}
 
                             {/* Videos Vertical Stack */}
@@ -321,6 +352,15 @@ export default function ReportDetailsScreen() {
                                     {videos.map((url) => (
                                         <PremiumVideoItem key={url} url={url} colors={colors} />
                                     ))}
+                                </View>
+                            )}
+
+                            {images.length === 0 && videos.length === 0 && (
+                                <View style={styles.noEvidenceBox}>
+                                    <Ionicons name="information-circle-outline" size={20} color={colors.subtext} />
+                                    <Text style={[styles.noEvidenceText, { color: colors.subtext }]}>
+                                        No images or videos reported for this incident.
+                                    </Text>
                                 </View>
                             )}
                         </Animated.View>
@@ -475,7 +515,7 @@ const styles = StyleSheet.create({
         marginRight: 4,
     },
     heroMainTitle: {
-        color: '#fff',
+        color: '#080303ff',
         fontSize: 34,
         fontWeight: '900',
         lineHeight: 38,
@@ -487,7 +527,7 @@ const styles = StyleSheet.create({
         gap: 6,
     },
     heroMetaText: {
-        color: 'rgba(255,255,255,0.8)',
+        color: '#131212',
         fontSize: 13,
         fontWeight: '500',
     },
@@ -577,26 +617,24 @@ const styles = StyleSheet.create({
     evidenceContainer: {
         marginTop: 8,
     },
+    galleryWrapper: {
+        marginLeft: -24,
+        marginRight: -24,
+        marginBottom: 8,
+    },
     evidenceScroll: {
-        marginLeft: -20,
-        width: SCREEN_WIDTH,
+        width: SCREEN_WIDTH - 40,
     },
     evidenceScrollContent: {
-        paddingLeft: 20,
-        paddingRight: 40,
-        gap: 16,
+        paddingHorizontal: 24,
+        gap: 12,
     },
     galleryItem: {
-        width: SCREEN_WIDTH * 0.75,
-        height: 220,
-        borderRadius: 24,
+        width: SCREEN_WIDTH * 0.7,
+        height: 200,
+        borderRadius: 20,
         overflow: 'hidden',
         position: 'relative',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 10,
-        elevation: 3,
     },
     galleryImage: {
         width: '100%',
@@ -652,5 +690,28 @@ const styles = StyleSheet.create({
         fontSize: 11,
         fontWeight: '900',
         letterSpacing: 1,
+    },
+    noEvidenceBox: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 16,
+        gap: 8,
+        opacity: 0.7,
+    },
+    noEvidenceText: {
+        fontSize: 14,
+        fontWeight: '500',
+    },
+    debugBadge: {
+        backgroundColor: 'rgba(0,0,0,0.05)',
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderRadius: 4,
+        marginLeft: 'auto',
+    },
+    debugBadgeText: {
+        fontSize: 10,
+        fontWeight: 'bold',
+        opacity: 0.5,
     },
 });
