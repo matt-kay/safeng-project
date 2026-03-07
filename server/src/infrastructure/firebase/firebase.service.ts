@@ -66,4 +66,9 @@ export class FirebaseService {
     const existingClaims = user.customClaims || {};
     await auth.setCustomUserClaims(uid, { ...existingClaims, ...claims });
   }
+
+  getStorageBucketName(): string {
+    const projectId = this.configService.get<string>('FIREBASE_PROJECT_ID') || 'brisk-vtu';
+    return this.configService.get<string>('FIREBASE_STORAGE_BUCKET') || `${projectId}.firebasestorage.app`;
+  }
 }

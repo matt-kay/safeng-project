@@ -12,7 +12,7 @@ export class StorageService {
         private configService: ConfigService,
         private firebaseService: FirebaseService
     ) {
-        const bucketName = this.configService.get<string>('FIREBASE_STORAGE_BUCKET') || `${this.configService.get('FIREBASE_PROJECT_ID')}.firebasestorage.app`;
+        const bucketName = this.firebaseService.getStorageBucketName();
         this.bucket = this.firebaseService.getStorage().bucket(bucketName);
     }
 

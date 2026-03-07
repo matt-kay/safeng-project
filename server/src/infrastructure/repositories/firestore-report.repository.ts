@@ -53,7 +53,7 @@ export class FirestoreReportRepository {
     }
 
     private toFirestore(report: Report): any {
-        const bucketName = this.firebaseService.getStorage().bucket().name;
+        const bucketName = this.firebaseService.getStorageBucketName();
 
         const extractPath = (media: string[] | undefined): string[] => {
             if (!media) return [];
@@ -88,7 +88,7 @@ export class FirestoreReportRepository {
     }
 
     private fromFirestore(id: string, data: any): Report {
-        const bucketName = this.firebaseService.getStorage().bucket().name;
+        const bucketName = this.firebaseService.getStorageBucketName();
         const storageEmulatorHost = process.env.FIREBASE_STORAGE_EMULATOR_HOST;
 
         const transformMedia = (media: string[] | undefined): string[] => {
