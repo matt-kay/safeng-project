@@ -4,7 +4,12 @@ import { Report } from '../../domain/entities/report';
 
 export class GetReportsQuery {
     constructor(
-        public readonly userId: string,
+        public readonly userId?: string,
+        public readonly status?: string,
+        public readonly type?: string,
+        public readonly lat?: number,
+        public readonly lng?: number,
+        public readonly radiusKm?: number,
         public readonly page: number = 1,
         public readonly limit: number = 20,
     ) { }
@@ -21,7 +26,6 @@ export class GetReportsHandler implements IQueryHandler<GetReportsQuery> {
     constructor(private readonly reportRepo: FirestoreReportRepository) { }
 
     async execute(query: GetReportsQuery): Promise<GetReportsResponse> {
-        const { userId, page, limit } = query;
-        return await this.reportRepo.getByUserIdPaginated(userId, page, limit);
+        return await this.reportRepo.getReports(query);
     }
 }

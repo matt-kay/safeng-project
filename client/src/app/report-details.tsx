@@ -29,7 +29,8 @@ import Animated, {
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 export default function ReportDetailsScreen() {
-    const { id } = useLocalSearchParams<{ id: string }>();
+    const { id, fromHome } = useLocalSearchParams<{ id: string; fromHome?: string }>();
+    const isFromHome = fromHome === 'true';
     const { colors, triggerHaptic, resolvedTheme } = useSettings();
     const router = useRouter();
 
@@ -191,17 +192,23 @@ export default function ReportDetailsScreen() {
                             <Ionicons name="chevron-back" size={24} color="#fff" />
                         </TouchableOpacity>
 
-                        <Animated.Text entering={FadeInDown.delay(100)} style={styles.headerTitle}>
-                            CASE #{id.slice(-5).toUpperCase()}
-                        </Animated.Text>
+                        {!isFromHome && (
+                            <Animated.Text entering={FadeInDown.delay(100)} style={styles.headerTitle}>
+                                CASE #{id.slice(-5).toUpperCase()}
+                            </Animated.Text>
+                        )}
 
                         <View style={styles.headerActions}>
-                            <TouchableOpacity onPress={handleEdit} style={styles.headerIconBtn}>
-                                <Ionicons name="create-outline" size={20} color="#fff" />
-                            </TouchableOpacity>
-                            <TouchableOpacity onPress={handleDelete} style={styles.headerIconBtn}>
-                                <Ionicons name="trash-outline" size={20} color="#EF4444" />
-                            </TouchableOpacity>
+                            {!isFromHome && (
+                                <>
+                                    <TouchableOpacity onPress={handleEdit} style={styles.headerIconBtn}>
+                                        <Ionicons name="create-outline" size={20} color="#fff" />
+                                    </TouchableOpacity>
+                                    <TouchableOpacity onPress={handleDelete} style={styles.headerIconBtn}>
+                                        <Ionicons name="trash-outline" size={20} color="#EF4444" />
+                                    </TouchableOpacity>
+                                </>
+                            )}
                         </View>
                     </View>
                 </BlurView>
@@ -228,10 +235,12 @@ export default function ReportDetailsScreen() {
                     />
 
                     <Animated.View entering={FadeInRight.delay(300)} style={styles.heroTitleContainer}>
-                        <View style={[styles.premiumStatusBadge, { backgroundColor: getStatusColor(report.status) }]}>
-                            <View style={styles.badgeDot} />
-                            <Text style={styles.statusText}>{report.status.toUpperCase()}</Text>
-                        </View>
+                        {!isFromHome && (
+                            <View style={[styles.premiumStatusBadge, { backgroundColor: getStatusColor(report.status) }]}>
+                                <View style={styles.badgeDot} />
+                                <Text style={styles.statusText}>{report.status.toUpperCase()}</Text>
+                            </View>
+                        )}
                         <Text style={styles.heroMainTitle}>
                             {report.type === ReportType.OTHER ? report.otherTitle : report.type}
                         </Text>

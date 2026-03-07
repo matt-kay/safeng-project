@@ -34,12 +34,25 @@ export class ReportController {
     @UseGuards(FirebaseAuthGuard)
     async getReports(
         @Request() req: any,
+        @Query('status') status?: string,
+        @Query('type') type?: string,
+        @Query('lat') lat?: number,
+        @Query('lng') lng?: number,
+        @Query('radiusKm') radiusKm?: number,
         @Query('page') page: number = 1,
         @Query('limit') limit: number = 20,
     ) {
-        const user = req.user;
         return await this.queryBus.execute(
-            new GetReportsQuery(user.uid, Number(page), Number(limit)),
+            new GetReportsQuery(
+                undefined, // We don't want to filter by userId if we're looking for public reports
+                status,
+                type,
+                lat ? Number(lat) : undefined,
+                lng ? Number(lng) : undefined,
+                radiusKm ? Number(radiusKm) : undefined,
+                Number(page),
+                Number(limit)
+            ),
         );
     }
 

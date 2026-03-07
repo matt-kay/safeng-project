@@ -31,15 +31,51 @@ export class FirestoreReportRepository {
     }
 
     async getByUserIdPaginated(userId: string, page: number, limit: number): Promise<{ reports: Report[], total: number, hasMore: boolean }> {
-        const reports = await this.getByUserId(userId);
-        const total = reports.length;
-        const startIndex = (page - 1) * limit;
-        const pagedReports = reports.slice(startIndex, startIndex + limit);
+        return this.getReports({ userId, page, limit });
+    }
+
+    async getReports(params: {
+        userId?: string;
+        status?: string;
+        type?: string;
+        lat?: number;
+        lng?: number;
+        radiusKm?: number;
+        page: number;
+        limit: number;
+    }): Promise<{ reports: Report[], total: number, hasMore: boolean }> {
+        let query: any = this.collection;
+
+        if (params.userId) {
+            query = query.where('userId', '==', params.userId);
+        }
+
+        if (params.status) {
+            query = query.where('status', '==', params.status);
+        }
+
+        if (params.type) {
+            query = query.where('type', '==', params.type);
+        }
+
+        // Placeholder for geo-filtering (lat, lng, radiusKm)
+        // For now, we'll just log and ignore, as full implementation will use PostGIS later.
+        if (params.lat && params.lng && params.radiusKm) {
+            console.log(`Placeholder: filtering reports near ${params.lat}, ${params.lng} within ${params.radiusKm}km`);
+            // Basic approximation logic could go here, but focusing on UI as requested.
+        }
+
+        const snapshot = await query.orderBy('createdAt', 'desc').get();
+        const allReports = snapshot.docs.map((doc: any) => this.fromFirestore(doc.id, doc.data()));
+
+        const total = allReports.length;
+        const startIndex = (params.page - 1) * params.limit;
+        const pagedReports = allReports.slice(startIndex, startIndex + params.limit);
 
         return {
             reports: pagedReports,
             total,
-            hasMore: startIndex + limit < total,
+            hasMore: startIndex + params.limit < total,
         };
     }
 

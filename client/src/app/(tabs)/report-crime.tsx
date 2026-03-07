@@ -24,6 +24,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useSettings } from '@/context/SettingsContext';
 import { ReportService, ReportType, ReportListItem } from '@/services/sdk/report-service';
 import AlertModal from '@/components/AlertModal';
+import { ReportCard } from '@/components/reports/ReportCard';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -121,7 +122,7 @@ export default function ReportCrimeScreen() {
             else if (pageNum === 1) setLoadingReports(true);
             else setLoadingMore(true);
 
-            const response = await ReportService.listReports(pageNum, 10);
+            const response = await ReportService.listReports({ page: pageNum, limit: 10 });
 
             if (isRefresh || pageNum === 1) {
                 setReports(response.reports);
@@ -160,9 +161,47 @@ export default function ReportCrimeScreen() {
         }
     };
 
+    const handleDeleteReport = async (id: string) => {
+        Alert.alert(
+            'Delete Report',
+            'Are you sure you want to delete this report? This action cannot be undone.',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Delete',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            setLoading(true);
+                            await ReportService.deleteReport(id);
+                            triggerHaptic();
+                            setAlert({
+                                visible: true,
+                                title: 'Deleted',
+                                message: 'The report has been successfully deleted.',
+                                type: 'success'
+                            });
+                            fetchReports(1, true);
+                        } catch (error) {
+                            console.error('Error deleting report:', error);
+                            setAlert({
+                                visible: true,
+                                title: 'Error',
+                                message: 'Failed to delete report. Please try again.',
+                                type: 'error'
+                            });
+                        } finally {
+                            setLoading(false);
+                        }
+                    }
+                }
+            ]
+        );
+    };
+
     const renderReportItem = ({ item }: { item: ReportListItem }) => (
-        <TouchableOpacity
-            style={[styles.reportCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+        <ReportCard
+            report={item}
             onPress={() => {
                 triggerHaptic();
                 router.push({
@@ -170,41 +209,10 @@ export default function ReportCrimeScreen() {
                     params: { id: item.id }
                 });
             }}
-        >
-            <View style={styles.reportHeader}>
-                <View style={styles.reportTypeContainer}>
-                    <Ionicons
-                        name={REPORT_TYPES.find(t => t.value === item.type)?.icon as any || "help-circle-outline"}
-                        size={20}
-                        color={colors.primary}
-                    />
-                    <Text style={[styles.reportType, { color: colors.text }]}>
-                        {item.type === ReportType.OTHER ? item.otherTitle : item.type}
-                    </Text>
-                </View>
-                <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) + '15' }]}>
-                    <Text style={[styles.statusText, { color: getStatusColor(item.status) }]}>
-                        {item.status}
-                    </Text>
-                </View>
-            </View>
-
-            <Text style={[styles.reportDescription, { color: colors.subtext }]} numberOfLines={2}>
-                {item.description}
-            </Text>
-
-            <View style={styles.reportFooter}>
-                <View style={styles.reportLocation}>
-                    <Ionicons name="location-outline" size={14} color={colors.subtext} />
-                    <Text style={[styles.reportLocationText, { color: colors.subtext }]} numberOfLines={1}>
-                        {item.location.street}, {item.location.lga}
-                    </Text>
-                </View>
-                <Text style={[styles.reportDate, { color: colors.subtext }]}>
-                    {new Date(item.createdAt).toLocaleDateString()}
-                </Text>
-            </View>
-        </TouchableOpacity>
+            showActions={true}
+            onEdit={() => handlePrepareEdit(item.id)}
+            onDelete={() => handleDeleteReport(item.id)}
+        />
     );
 
     const fetchLocation = async () => {

@@ -82,9 +82,25 @@ export class ReportService {
         return data;
     }
 
-    static async listReports(page: number = 1, limit: number = 10): Promise<ListReportsResponse> {
+    static async listReports(params: {
+        page?: number;
+        limit?: number;
+        status?: string;
+        type?: string;
+        lat?: number;
+        lng?: number;
+        radiusKm?: number;
+    } = {}): Promise<ListReportsResponse> {
         const { data } = await apiClient.get<ListReportsResponse>('/reports', {
-            params: { page, limit },
+            params: {
+                page: params.page || 1,
+                limit: params.limit || 10,
+                status: params.status,
+                type: params.type,
+                lat: params.lat,
+                lng: params.lng,
+                radiusKm: params.radiusKm,
+            },
         });
         return data;
     }
